@@ -11,25 +11,35 @@
  *   Alexander J. McCaskey - initial API and implementation
  *******************************************************************************/
 #include "xacc.hpp"
+#include "xacc_service.hpp"
+#include "xacc_config.hpp"
 
 int main(int argc, char **argv) {
   xacc::Initialize(argc, argv);
+  std::string config_dir = std::string(GATEIR_TEST_FILE_DIR);
 
-  auto accelerator = xacc::getAccelerator("ibm:ibmq_poughkeepsie");
+  std::ifstream backendFile(config_dir + "/test_backends.json");
+  std::string jjson((std::istreambuf_iterator<char>(backendFile)), std::istreambuf_iterator<char>());
+  // Contribute pulse instructions to the service registry
+  if (xacc::hasAccelerator("ibm")) {
+    auto ibm = xacc::getService<xacc::Accelerator>("ibm");
+    ibm->updateConfiguration(
+        xacc::HeterogeneousMap{std::make_pair("backend", "ibmq_johannesburg")});
+    ibm->contributeInstructions(jjson);
+  }
+  
   auto buffer = xacc::qalloc(2);
 
   xacc::qasm(R"(
 .compiler xasm
 .circuit bell
 .qbit q
-.parameters a, b, c, d
-pulse::u3(q[0], pi/2, 0, pi);
-pulse::cx(q[0],q[1], c, d);
-pulse::meas(q[0]);
-pulse::meas(q[1]);
+pulseu3(q[0], pi/2, 0, pi);
+pulsecx(q[0],q[1]);
+pulseMEAS(q[0]);
+pulseMEAS(q[1]);
 )");
 
  auto bell = xacc::getCompiled("bell");
- accelerator->execute(buffer, bell);
-
+ std::cout << "Compiled: \n" << bell->toString();
 }

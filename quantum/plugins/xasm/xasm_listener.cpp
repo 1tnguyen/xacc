@@ -401,6 +401,17 @@ void XASMListener::enterParamList(xasmParser::ParamListContext *ctx) {
 }
 
 void XASMListener::exitInstruction(xasmParser::InstructionContext *ctx) {
+  if (currentInstructionName.rfind("pulse", 0) == 0) {
+    // Instruction name starts with "pulse"
+    // HACK: this "::" should be in the XASM input,
+    // for some reasons, the lexer failed when the instruction name contains "::"
+    currentInstructionName.insert(5, "::");
+    // Append qubit index
+    for (const auto& bit: currentBits) {
+      currentInstructionName.append("_" + std::to_string(bit));
+    }
+  }
+
   auto inst = irProvider->createInstruction(currentInstructionName, currentBits,
                                             currentParameters);
   if (!currentBitIdxExpressions.empty()) {

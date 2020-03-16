@@ -12,3 +12,4 @@
 # *******************************************************************************/
 add_executable(test_open_pulse test_open_pulse.cpp)
 target_link_libraries(test_open_pulse PRIVATE xacc)
+target_include_directories(test_open_pulse PRIVATE ${CMAKE_BINARY_DIR})
