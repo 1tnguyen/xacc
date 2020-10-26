@@ -23,6 +23,7 @@ file(GLOB SRC hwe/hwe.cpp
               aswap/aswap.cpp
               qfast/qfast.cpp
               kak/kak.cpp
+              svd_opt/svd_opt.cpp
               GeneratorsActivator.cpp)
 
 usfunctiongetresourcesource(TARGET ${LIBRARY_NAME} OUT SRC)
@@ -32,7 +33,7 @@ add_library(${LIBRARY_NAME} SHARED ${SRC})
 
 target_include_directories(
   ${LIBRARY_NAME}
-  PUBLIC . range exp hwe qft uccsd ucc1 ucc3 aswap qfast kak
+  PUBLIC . range exp hwe qft uccsd ucc1 ucc3 aswap qfast kak svd_opt
   ${CMAKE_SOURCE_DIR}/quantum/plugins/utils)
 
 target_link_libraries(${LIBRARY_NAME} PUBLIC xacc PRIVATE xacc-quantum-gate xacc-pauli xacc-fermion)
