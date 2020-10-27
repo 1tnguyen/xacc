@@ -75,6 +75,7 @@ if(XACC_BUILD_TESTS)
   add_subdirectory(aswap/tests)
   add_subdirectory(qfast/tests)
   add_subdirectory(kak/tests)
+  add_subdirectory(svd_opt/tests)
 endif()
 
 install(TARGETS ${LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins)
