@@ -33,8 +33,10 @@ public:
         Gate(const Eigen::MatrixXcd& in_unitary, const std::vector<size_t>& in_location, bool in_fixed = false);
         // Returns the inverse of this gate.
         Gate getInverse() const;
+        const std::vector<size_t>& getLocation() const { return m_location; }
+        const Eigen::MatrixXcd& getUnitaryMat() const { return m_unitary; }
+        bool isFixed() const { return m_isFixed; }
     private:
-        friend class CircuitTensor; 
         std::vector<size_t> m_location;
         bool m_isFixed;
         Eigen::MatrixXcd m_unitary;
@@ -51,6 +53,7 @@ public:
         void applyLeft(const Gate& in_rhsGate);
         // Calculates the environmental matrix of the tensor with respect to the specified location.
         Eigen::MatrixXcd calcEnvMatrix(const std::vector<size_t>& in_location) const;
+        const Eigen::MatrixXcd& getCurrentUnitary() const { return m_tensor; }
     private:
         Eigen::MatrixXcd m_targetUnitary;
         Eigen::MatrixXcd m_tensor;
