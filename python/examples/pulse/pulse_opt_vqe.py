@@ -11,7 +11,7 @@ class PulseOptParams:
             # Amplitude in the range of [0.0, 1.0]
             self.amplitude.append(np.random.rand(nb_segments))
             # Assuming the frequency shift in the range of [-1.0, 1.0]
-            self.freq.append((np.random.rand(nb_segments) - 0.5)*2.0)
+            self.freq.append(np.zeros(nb_segments))
             rand_segs = np.random.rand(nb_segments)
             # Time segments: using a random sequence to divide the total time into 
             # time windows (sum up to the total length)
@@ -52,22 +52,27 @@ class PulseOptParams:
             pulse_vals.append(pulse_val)
         return pulse_vals
 
+import xacc, json
 
-import xacc
+# Query backend info (dt)
+qpu = xacc.getAccelerator("aer:ibmq_armonk", {"sim-type": "pulse"})
+backend_properties = qpu.getProperties()
+config = json.loads(backend_properties["config-json"])  
+dt = config["dt"]
+
+
 # Simple test: single qubit
-pulse_opt = PulseOptParams(nb_qubits=1)
+pulse_opt = PulseOptParams(nb_qubits=1, nb_segments=1, total_length = 10.0)
 provider = xacc.getIRProvider("quantum")
 program = provider.createComposite("gaussian")
 # Create the pulse instructions
 # Just use random initial pulse, we eventually need to put this into an optimization loop to update parameters...
-pulse_inst = provider.createInstruction("pulse", [0], [], { "channel" : "d0", "samples": pulse_opt.getPulseSamples(0, 0.22)})
+pulse_inst = provider.createInstruction("pulse", [0], [], { "channel" : "d0", "samples": pulse_opt.getPulseSamples(0, dt)})
 program.addInstruction(pulse_inst)
 # Measure instructions (to be lowered to pulses)
 m0 = provider.createInstruction("Measure", [0])
 program.addInstruction(m0)
 
-# Execute on the Aer simulator
-qpu = xacc.getAccelerator("aer:ibmq_armonk", {"sim-type": "pulse"})
 buffer = xacc.qalloc(1)
 qpu.execute(buffer, program)
 print(buffer)
