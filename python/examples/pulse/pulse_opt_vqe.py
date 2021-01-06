@@ -60,21 +60,55 @@ backend_properties = qpu.getProperties()
 config = json.loads(backend_properties["config-json"])  
 dt = config["dt"]
 
-
 # Simple test: single qubit
-pulse_opt = PulseOptParams(nb_qubits=1, nb_segments=1, total_length = 10.0)
+ham = xacc.getObservable("pauli", "1.0 Z0")
+# Pulse parameter:
+# Simple: single segment, i.e. square pulse.
+pulse_opt = PulseOptParams(nb_qubits=1, nb_segments=1, total_length = 100.0)
 provider = xacc.getIRProvider("quantum")
-program = provider.createComposite("gaussian")
-# Create the pulse instructions
-# Just use random initial pulse, we eventually need to put this into an optimization loop to update parameters...
-pulse_inst = provider.createInstruction("pulse", [0], [], { "channel" : "d0", "samples": pulse_opt.getPulseSamples(0, dt)})
-program.addInstruction(pulse_inst)
-# Measure instructions (to be lowered to pulses)
-m0 = provider.createInstruction("Measure", [0])
-program.addInstruction(m0)
 
-buffer = xacc.qalloc(1)
-qpu.execute(buffer, program)
-print(buffer)
+# Optimization function:
+# Note: We need to unpack the flattened x array into {amp, freq, time segment}.
+def pulse_opt_func(x):
+    # This is a one-segment optimization:
+    amp = x[0]
+    freq = x[1]
+    # Update the params in the PulseOptParams
+    pulse_opt.freqs = [[freq]]
+    pulse_opt.amplitude = [[amp]]
+    # Construct the pulse program:
+    program = provider.createComposite("vqe_pulse_composite")
+    # Create the pulse instructions
+    # Just use random initial pulse, we eventually need to put this into an optimization loop to update parameters...
+    pulse_inst = provider.createInstruction("pulse", [0], [], { "channel" : "d0", "samples": pulse_opt.getPulseSamples(0, dt)})
+    program.addInstruction(pulse_inst)
+    # Observe the pulse program:
+    fs_to_exe = ham.observe(program)
+    # Execute
+    energy = 0.0
+    for i in range(len(fs_to_exe)):
+        fs = fs_to_exe[i]
+        term = ham.getNonIdentitySubTerms()[i]
+        coeff = 0.0
+        for op in term:
+            coeff = op[1].coeff().real
+        buffer = xacc.qalloc(1)
+        qpu.execute(buffer, fs)
+        # print(buffer)
+        # print("Exp-Z =", buffer.getExpectationValueZ())
+        energy = energy + coeff * buffer.getExpectationValueZ()
+    # print("Energy =", energy)
+    return energy
 
+# Run the optimization loop:
+# Optimizer:
+# Single segment: 1 amplitude and 1 freq
+# optimizer = xacc.getOptimizer('nlopt')
+# result = optimizer.optimize(pulse_opt_func, 2)
+# print(result)
 
+# Not changing the freq., just varying the amplitude:
+# Should see a Rabi oscillation....
+for ampl in np.linspace(0.0, 1.0, 100):
+    val = pulse_opt_func([ampl, 0.0])
+    print("E(", ampl, ") =", val)
