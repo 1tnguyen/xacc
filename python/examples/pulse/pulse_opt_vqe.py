@@ -10,6 +10,7 @@
 
 import numpy as np
 from scipy.linalg import block_diag
+import xacc, json
 
 # Pauli operators in an extended basis (e.g. qutrit)
 def s(n_qubits, dim, site, pauli):
@@ -33,7 +34,37 @@ def s(n_qubits, dim, site, pauli):
     oplist[site] = spin_op
     result = oplist[0]
     for i in range(1, n_qubits):
-        result = np.kron(result, oplist[i])
+        result = np.kron(oplist[i], result)
+    return result
+
+def pauli_op_to_matrix(obs, n_qubits, dim = 3):
+    """
+    Parameters:
+    -----------
+    obs: xacc observable (Pauli type)
+    n_qubits: number of qubits of the total system. Should be equal to the number of qubits on the device. 
+    dim: qubit dimension
+    
+    Returns:
+    --------
+    The observable matrix in the extended space (qutrit)
+    """
+    def getTermCoeff(term):
+        if term is None:
+            return 0.0
+        for op in term:
+            coeff = op[1].coeff()
+            return coeff
+    
+    result = getTermCoeff(obs.getIdentitySubTerm()) * np.eye(dim**n_qubits, dtype=complex)
+    for term in obs.getNonIdentitySubTerms():
+        coeff = getTermCoeff(term)
+        termMat = coeff * np.eye(dim**n_qubits)
+        for op in term:
+            for idx in op[1].ops():
+                opName = op[1].ops()[idx]
+                termMat = termMat @ s(n_qubits, dim, idx, opName)
+            result += termMat
     return result
 
 def calculateExpVal(state_vec, observable):
@@ -121,13 +152,13 @@ class PulseOptParams:
             pulse_vals.append(pulse_val)
         return pulse_vals
 
-
-import xacc, json
-
 # Query backend info (dt)
 qpu = xacc.getAccelerator("aer:ibmq_armonk", {"sim-type": "pulse"})
 backend_properties = qpu.getProperties()
 config = json.loads(backend_properties["config-json"])
+# Number of qubits of the backend
+nbQubits = config["n_qubits"]
+# Sampling time (dt)
 dt = config["dt"]
 
 # Simple test: single qubit
@@ -156,11 +187,10 @@ def pulse_opt_func(x):
             "samples": pulse_opt.getPulseSamples(0, dt)
         })
     program.addInstruction(pulse_inst)
-    buffer = xacc.qalloc(1)
+    buffer = xacc.qalloc(nbQubits)
     qpu.execute(buffer, program)
     state_vec = getStateVectorFromBuffer(buffer)
-    # TODO: generate from XACC Observable
-    obs = s(1, 3, 0, "Z")
+    obs = pauli_op_to_matrix(ham, buffer.size())
     energy = calculateExpVal(state_vec, obs)
     #print(state_vec, "->", energy)
 
