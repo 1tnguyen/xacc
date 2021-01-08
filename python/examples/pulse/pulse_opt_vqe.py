@@ -1,4 +1,69 @@
+# This is a helper to compute the expectation value 
+# of an observable from Aer pulse simulation state-vector.
+# Aer returns the state vector in the *qutrit* basis,
+# i.e. 3-level systems => 3^N length rather than the conventional 2^N.
+# Hence, we need to have a custom method to compute the expectation.
+
+# Note: the current pulse lib (cmd-def) and the Hamiltonian (used by Aer)
+# has mismatches. Hence, the observe procedure by partial tomography (adding H, Rx, etc.)
+# doesn't work (the pulse cmd-def for H doesn't work as expected on the Aer simulator)
+
 import numpy as np
+from scipy.linalg import block_diag
+
+# Pauli operators in an extended basis (e.g. qutrit)
+def s(n_qubits, dim, site, pauli):
+    """
+    Parameters:
+    -----------
+    n_qubits: number of qubits \in (1,2,..)
+    dim: dimension 
+    site: site for pauli \in (0,1,..)
+    pauli: 'X','Y','Z'
+    
+    Returns:
+    --------
+    single-site pauli matrix defined over tensor product hilbert space (arbitray dimension)
+    """
+    oplist = [np.eye(dim)]*n_qubits
+    if pauli == 'X': spin_op = block_diag([[0,1],[1,0]],0*np.eye(dim-2))
+    elif pauli == 'Y': spin_op = block_diag([[0,-1j],[1j,0]],0*np.eye(dim-2))
+    elif pauli == 'Z': spin_op = block_diag([[1,0],[0,-1]],0*np.eye(dim-2))
+    else: return TypeError
+    oplist[site] = spin_op
+    result = oplist[0]
+    for i in range(1, n_qubits):
+        result = np.kron(result, oplist[i])
+    return result
+
+def calculateExpVal(state_vec, observable):
+    """
+    Parameters:
+    -----------
+    state_vec: state vector (1D list/array)
+    observable: observable matrix
+    
+    Returns:
+    --------
+    expectation value (real)
+    """
+    state_vec = np.array(state_vec)
+    # Check dimension
+    if (len(state_vec) != observable.shape[0] or len(state_vec) != observable.shape[1]):
+        return ValueError
+    temp = observable @ state_vec
+    return np.real(state_vec.conj().T @ temp)
+
+# Retrieve the state vector from accelerator buffer result
+def getStateVectorFromBuffer(buffer):
+    state_vec = buffer["state"]
+    result = []
+    for pair in state_vec:
+        if (len(pair) != 2):
+            return TypeError
+        else:
+            result.append(pair[0] + 1j * pair[1])
+    return result
 
 
 class PulseOptParams:
@@ -91,21 +156,29 @@ def pulse_opt_func(x):
             "samples": pulse_opt.getPulseSamples(0, dt)
         })
     program.addInstruction(pulse_inst)
-    # Observe the pulse program:
-    fs_to_exe = ham.observe(program)
-    # Execute
-    energy = 0.0
-    for i in range(len(fs_to_exe)):
-        fs = fs_to_exe[i]
-        term = ham.getNonIdentitySubTerms()[i]
-        coeff = 0.0
-        for op in term:
-            coeff = op[1].coeff().real
-        buffer = xacc.qalloc(1)
-        qpu.execute(buffer, fs)
-        # print(buffer)
-        # print("Exp-Z =", buffer.getExpectationValueZ())
-        energy = energy + coeff * buffer.getExpectationValueZ()
+    buffer = xacc.qalloc(1)
+    qpu.execute(buffer, program)
+    state_vec = getStateVectorFromBuffer(buffer)
+    # TODO: generate from XACC Observable
+    obs = s(1, 3, 0, "Z")
+    energy = calculateExpVal(state_vec, obs)
+    #print(state_vec, "->", energy)
+
+    # Observe the pulse program: For use on IBM backend 
+    # fs_to_exe = ham.observe(program)
+    # # Execute
+    # energy = 0.0
+    # for i in range(len(fs_to_exe)):
+    #     fs = fs_to_exe[i]
+    #     term = ham.getNonIdentitySubTerms()[i]
+    #     coeff = 0.0
+    #     for op in term:
+    #         coeff = op[1].coeff().real
+    #     buffer = xacc.qalloc(1)
+    #     qpu.execute(buffer, fs)
+    #     # print(buffer)
+    #     # print("Exp-Z =", buffer.getExpectationValueZ())
+    #     energy = energy + coeff * buffer.getExpectationValueZ()
     print("Energy(", x, ") =", energy)
     return energy
 
@@ -120,7 +193,7 @@ optimizer = xacc.getOptimizer('nlopt', {
     "maxeval": 100
 })
 result = optimizer.optimize(pulse_opt_func, 2)
-print(result)
+print("Optimization Result:", result)
 
 # Not changing the freq., just varying the amplitude:
 # Should see a Rabi oscillation....
