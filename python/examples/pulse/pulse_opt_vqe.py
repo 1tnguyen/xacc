@@ -150,10 +150,20 @@ class PulseOptParams:
             # to create LO freq. shift effect.
             pulse_val = amp * np.exp(-1j * 2.0 * np.pi * freq * time)
             pulse_vals.append(pulse_val)
+        
+        # Pulse length must be a multiple of 16 to be able to run on actual backend
+        while (len(pulse_vals) % 16 != 0):
+            # padding
+            pulse_vals.append(0.0*1j) 
+            
         return pulse_vals
 
 # Query backend info (dt)
-qpu = xacc.getAccelerator("aer:ibmq_armonk", {"sim-type": "pulse"})
+# Aer simulator
+qpu = xacc.getAccelerator("aer:ibmq_bogota")
+# IBM backend
+#qpu = xacc.getAccelerator("ibm:ibmq_bogota")
+
 backend_properties = qpu.getProperties()
 config = json.loads(backend_properties["config-json"])
 # Number of qubits of the backend
@@ -168,10 +178,11 @@ ham = xacc.getObservable("pauli", "1.0 Z0")
 pulse_opt = PulseOptParams(nb_qubits=1, nb_segments=1, total_length=100.0)
 provider = xacc.getIRProvider("quantum")
 
-
 # Optimization function:
 # Note: We need to unpack the flattened x array into {amp, freq, time segment}.
 def pulse_opt_func(x):
+    # Handle both remote (ibm) and simulator (aer)
+    isRemote = (qpu.name() == "ibm")
     # This is a one-segment optimization:
     amp = x[0]
     freq = x[1]
@@ -181,37 +192,38 @@ def pulse_opt_func(x):
     # Construct the pulse program:
     program = provider.createComposite("vqe_pulse_composite")
     # Create the pulse instructions
+    # TODO: handle multiple channels....
     pulse_inst = provider.createInstruction(
         "pulse", [0], [], {
             "channel": "d0",
             "samples": pulse_opt.getPulseSamples(0, dt)
         })
     program.addInstruction(pulse_inst)
-    buffer = xacc.qalloc(nbQubits)
-    qpu.execute(buffer, program)
-    state_vec = getStateVectorFromBuffer(buffer)
-    obs = pauli_op_to_matrix(ham, buffer.size())
-    energy = calculateExpVal(state_vec, obs)
-    #print(state_vec, "->", energy)
-
-    # Observe the pulse program: For use on IBM backend 
-    # fs_to_exe = ham.observe(program)
-    # # Execute
-    # energy = 0.0
-    # for i in range(len(fs_to_exe)):
-    #     fs = fs_to_exe[i]
-    #     term = ham.getNonIdentitySubTerms()[i]
-    #     coeff = 0.0
-    #     for op in term:
-    #         coeff = op[1].coeff().real
-    #     buffer = xacc.qalloc(1)
-    #     qpu.execute(buffer, fs)
-    #     # print(buffer)
-    #     # print("Exp-Z =", buffer.getExpectationValueZ())
-    #     energy = energy + coeff * buffer.getExpectationValueZ()
+    energy = 0.0
+    if not isRemote:
+        buffer = xacc.qalloc(nbQubits)
+        qpu.execute(buffer, program)
+        state_vec = getStateVectorFromBuffer(buffer)
+        obs = pauli_op_to_matrix(ham, buffer.size())
+        energy = calculateExpVal(state_vec, obs)
+        #print(state_vec, "->", energy)
+    else:
+        # Observe the pulse program: For use on IBM backend 
+        fs_to_exe = ham.observe(program)
+        # Execute
+        for i in range(len(fs_to_exe)):
+            fs = fs_to_exe[i]
+            term = ham.getNonIdentitySubTerms()[i]
+            coeff = 0.0
+            for op in term:
+                coeff = op[1].coeff().real
+            buffer = xacc.qalloc(1)
+            qpu.execute(buffer, fs)
+            print(buffer)
+            # print("Exp-Z =", buffer.getExpectationValueZ())
+            energy = energy + coeff * buffer.getExpectationValueZ()
     print("Energy(", x, ") =", energy)
     return energy
-
 
 # Run the optimization loop:
 # Optimizer:
