@@ -61,6 +61,11 @@ public:
              std::shared_ptr<Instruction> inst) override;
   bool isInitialized() const { return initialized; }
 
+  // ExecutionInfo implementation:
+  virtual xacc::HeterogeneousMap getExecutionInfo() const override {
+    return execution_info;
+  }
+
 private:
   static double calcExpectationValueZ(
       const std::vector<std::pair<double, double>> &in_stateVec,
@@ -79,7 +84,7 @@ private:
   bool initialized = false;
   std::shared_ptr<AER::Noise::NoiseModel> noiseModelObj;
   HeterogeneousMap physical_backend_properties;
-
+  HeterogeneousMap execution_info;
 };
 } // namespace quantum
 } // namespace xacc

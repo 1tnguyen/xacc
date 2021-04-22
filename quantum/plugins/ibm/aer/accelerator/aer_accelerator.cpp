@@ -57,6 +57,7 @@ void AerAccelerator::initialize(const HeterogeneousMap &params) {
   noise_model.clear();
   m_simtype = "qasm";
   connectivity.clear();
+  execution_info.clear();
 
   xacc_to_qobj = xacc::getCompiler("qobj");
   if (params.keyExists<int>("shots")) {
@@ -87,6 +88,16 @@ void AerAccelerator::initialize(const HeterogeneousMap &params) {
     }
     // Set connectivity based on the backend:
     connectivity = ibm->getConnectivity();
+    auto config_json = nlohmann::json::parse(
+        physical_backend_properties.getString("config-json"));
+    const bool open_pulse_enabled = config_json["open_pulse"].get<bool>();
+    if (open_pulse_enabled) {
+      const double dt = config_json["dt"].get<double>();
+      const std::string ham_json = config_json["hamiltonian"].dump();
+      // Add OpenPulse data:
+      execution_info.insert("openpulse-hamiltonian-json", ham_json);
+      execution_info.insert("dt", dt);
+    }
   } else if (params.stringExists("noise-model")) {
     std::string noise_model_str = params.getString("noise-model");
     // Check if this is a file name
