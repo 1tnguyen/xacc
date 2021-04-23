@@ -5,6 +5,7 @@
 #include <math.h>
 #include "exprtk.hpp"
 #include "Pulse.hpp"
+#include <nlohmann/json.hpp>
 
 using symbol_table_t = exprtk::symbol_table<double>;
 using expression_t = exprtk::expression<double>;
@@ -274,7 +275,74 @@ void PulseTransform::apply(std::shared_ptr<CompositeInstruction> program,
 PulseTransform::OptInfo
 PulseTransform::parseDeviceInfo(const HeterogeneousMap &exe_data) const {
   PulseTransform::OptInfo result;
-	// TODO
+  const std::string ham_json = exe_data.getString("openpulse-hamiltonian-json");
+  std::cout << "Ham:\n" << ham_json << "\n";
+  auto ham = nlohmann::json::parse(ham_json);
+  auto h_str = ham["h_str"].get<std::vector<std::string>>();
+  auto vars = ham["vars"].get<std::unordered_map<std::string, double>>();
+  for (const auto &[name, val] : vars) {
+    std::cout << name << " = " << val << "\n";
+  }
+  std::string staticHam;
+  std::vector<std::string> control_hams;
+
+  for (auto &term : h_str) {
+    std::cout << term << "\n";
+    assert(term.rfind("_SUM[i,", 0) == 0);
+    term = term.substr(7);
+    term = term.substr(0, term.size() - 1);
+    std::cout << term << "\n";
+    const auto split = [](const std::string &str,
+                          const std::string delim = ",") {
+      std::vector<std::string> tokens;
+      size_t prev = 0, pos = 0;
+      do {
+        pos = str.find(delim, prev);
+        if (pos == std::string::npos) {
+          pos = str.length();
+        }
+        std::string token = str.substr(prev, pos - prev);
+        if (!token.empty()) {
+          tokens.push_back(token);
+        }
+        prev = pos + delim.length();
+      } while (pos < str.length() && prev < str.length());
+      return tokens;
+    };
+
+    const auto replaceAll = [](std::string str, const std::string &from,
+                               const std::string &to) {
+      size_t start_pos = 0;
+      while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos +=
+            to.length(); // Handles case where 'to' is a substring of 'from'
+      }
+      return str;
+    };
+
+    const auto elems = split(term);
+    assert(elems.size() == 3);
+    const int start = stoi(elems[0]);
+    const int stop = stoi(elems[1]);
+
+    if (term.find("||") != std::string::npos) {
+      for (int i = start; i <= stop; ++i) {
+        const auto newStr = replaceAll(elems[2], "{i}", std::to_string(i));
+        auto split_terms = split(newStr, "||");
+				const auto control_term = split_terms[0];
+				const auto control_channel = split_terms[1];
+				std::cout << control_term << "\n";
+      }
+    } else {
+      for (int i = start; i <= stop; ++i) {
+        const auto newStr = replaceAll(elems[2], "{i}", std::to_string(i));
+        staticHam += (staticHam.empty()) ? newStr : (" + " + newStr);
+      }
+    }
+  }
+
+	std::cout << "Static: " << staticHam << "\n";
   return result;
 }
 } // namespace quantum

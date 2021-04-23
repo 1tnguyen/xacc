@@ -137,6 +137,20 @@ TEST(PulseTransformTester, checkSimple)
     }
 }
 
+TEST(PulseTransformTester, checkAerPulseTransform) {
+  auto compiler = xacc::getService<xacc::Compiler>("xasm");
+  auto program = compiler
+                     ->compile(
+                         R"(__qpu__ void testSimpleH(qbit q) {
+                H(q[0]);
+            })")
+                     ->getComposites()[0];
+  auto irt = xacc::getService<IRTransformation>("quantum-control");
+  auto qpu = xacc::getAccelerator("aer:ibmq_armonk");
+  irt->apply(program, qpu);
+  std::cout << "HOWDY:\n" << program->toString() << "\n";
+}
+
 int main(int argc, char **argv) 
 {
   xacc::Initialize(argc, argv);
