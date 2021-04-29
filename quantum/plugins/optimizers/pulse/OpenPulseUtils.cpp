@@ -524,38 +524,4 @@ HamiltonianParsingUtil::tryParse(const std::string &in_expr,
   std::cout << "Cannot parse Hamiltonian string " << in_expr << "\n";
   return nullptr;
 }
-
-bool HamiltonianParsingUtil::tryParse(
-    const std::string &in_jsonString,
-    std::function<void(HamiltonianTerm &)> in_forEachTermFn) {
-  auto j = nlohmann::json::parse(in_jsonString);
-  if (!j.is_object()) {
-    xacc::warning("Hamiltonian JSON must be an object.");
-    return false;
-  }
-
-  // Hamiltonian strings and vars map
-  auto hamStrArray = j["h_str"];
-  auto varsArray = j["vars"];
-
-  xacc::VarsMap vars;
-  for (auto varsArrayIter = varsArray.begin(); varsArrayIter != varsArray.end();
-       ++varsArrayIter) {
-    vars.emplace(varsArrayIter.key(), varsArrayIter.value().get<double>());
-  }
-
-  for (auto hamStrIter = hamStrArray.begin(); hamStrIter != hamStrArray.end();
-       ++hamStrIter) {
-    auto hamStr = (*hamStrIter).get<std::string>();
-    xacc::info("Hamiltonian term: " + hamStr);
-    auto parseResult = tryParse(hamStr, vars);
-    if (parseResult == nullptr) {
-      return false;
-    }
-
-    in_forEachTermFn(*parseResult);
-  }
-
-  return true;
-}
 } // namespace xacc

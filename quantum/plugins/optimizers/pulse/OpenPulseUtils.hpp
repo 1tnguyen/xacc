@@ -137,8 +137,6 @@ public:
   // Null if cannot parse
   std::unique_ptr<HamiltonianTerm> tryParse(const std::string &in_expr,
                                             const VarsMap &in_vars);
-  bool tryParse(const std::string &in_jsonString,
-                std::function<void(HamiltonianTerm &)> in_forEachTermFn);
   const std::string name() const override { return "default"; }
   const std::string description() const override {
     return "Parser for Open Pulse Hamiltonian terms";
