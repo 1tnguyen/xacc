@@ -92,11 +92,17 @@ void AerAccelerator::initialize(const HeterogeneousMap &params) {
         physical_backend_properties.getString("config-json"));
     const bool open_pulse_enabled = config_json["open_pulse"].get<bool>();
     if (open_pulse_enabled) {
+      auto default_json = nlohmann::json::parse(
+          physical_backend_properties.getString("defaults-json"));
       const double dt = config_json["dt"].get<double>();
       const std::string ham_json = config_json["hamiltonian"].dump();
+      const auto qubit_freq_est =
+          default_json["qubit_freq_est"].get<std::vector<double>>();
+
       // Add OpenPulse data:
       execution_info.insert("openpulse-hamiltonian-json", ham_json);
       execution_info.insert("dt", dt);
+      execution_info.insert("qubit_freq_est", qubit_freq_est);
     }
   } else if (params.stringExists("noise-model")) {
     std::string noise_model_str = params.getString("noise-model");

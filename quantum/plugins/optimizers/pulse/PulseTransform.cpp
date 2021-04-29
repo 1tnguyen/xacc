@@ -184,6 +184,9 @@ void PulseTransform::apply(std::shared_ptr<CompositeInstruction> program,
       std::make_pair("max-time", tMax), std::make_pair("dt", opt_info.dt),
       std::make_pair("hamiltonian-json", opt_info.ham_json)};
 
+  if (!opt_info.drive_channel_freqs.empty()) {
+    pulseOptimConfigs.insert("channel-freqs", opt_info.drive_channel_freqs);
+  }
   auto optimizer = xacc::getOptimizer("quantum-control", pulseOptimConfigs);
   // Perform pulse IR transformation
   const auto optimResult = optimizer->optimize();
@@ -278,6 +281,8 @@ PulseTransform::parseDeviceInfo(const HeterogeneousMap &exe_data) const {
   PulseTransform::OptInfo result;
   const std::string ham_json = exe_data.getString("openpulse-hamiltonian-json");
   result.dt = exe_data.get<double>("dt");
+  result.drive_channel_freqs =
+      exe_data.get<std::vector<double>>("qubit_freq_est");
   std::cout << "Ham:\n" << ham_json << "\n";
   auto ham = nlohmann::json::parse(ham_json);
   auto h_str = ham["h_str"].get<std::vector<std::string>>();

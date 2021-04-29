@@ -26,6 +26,7 @@ public:
     std::vector<std::string> controlChannels;
     double dt;
     std::string ham_json;
+    std::vector<double> drive_channel_freqs;
   };
 
   OptInfo parseDeviceInfo(const HeterogeneousMap &exe_data) const;

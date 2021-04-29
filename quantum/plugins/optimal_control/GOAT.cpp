@@ -149,7 +149,7 @@ Matrix GOAT_PulseOptim::constructMatrixFromPauliString(const std::string& in_pau
     return coefficient * result;
 }
 
-void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, const std::vector<std::string>& in_Hi, const std::vector<std::string>& in_fi, const std::vector<std::string>& in_params)
+void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, const std::vector<std::string>& in_Hi, const std::vector<std::string>& in_fi, const std::vector<std::string>& in_params, const std::vector<double>& in_loFreqs)
 {
     if (!in_H0.empty())
     {
@@ -172,6 +172,15 @@ void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, cons
     }
     // Add time variable
     m_symbolTable.add_variable("t", m_time);
+    lo_freqs = in_loFreqs;
+    if (lo_freqs.empty()) 
+    {
+        for (int i = 0; i < hamOps.size(); ++i) 
+        {
+            // Zero LO freqs.
+            lo_freqs.emplace_back(0.0);
+        }
+    }
 
     for (int i = 0; i < hamOps.size(); ++i)
     {
@@ -196,7 +205,7 @@ void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, cons
             m_paramVals = in_paramVals;
             m_time = in_time;
             const auto evaled = expression.value();
-            hamMat = hamMat + evaled * hamOps[i].second;
+            hamMat = hamMat + evaled * hamOps[i].second * std::exp(-I * 2.0 * M_PI * lo_freqs[i] * m_time);
         }
         
         return hamMat;
@@ -217,7 +226,7 @@ void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, cons
                 m_time = in_time;
                 // Calculate the derivative w.r.t. the parameter
                 const auto derivativeEvaled = exprtk::derivative(expression, params[idx]);
-                hamMat = hamMat + derivativeEvaled * hamOps[i].second;
+                hamMat = hamMat + derivativeEvaled * hamOps[i].second  * std::exp(-I * 2.0 * M_PI * lo_freqs[i] * m_time);
             }
             
             return hamMat;
@@ -563,6 +572,17 @@ void PulseOptimGOAT::setOptions(const HeterogeneousMap& in_options)
         optimizer = in_options.getString("optimizer");
     }
 
+    std::vector<double> channelFreqs;
+    if (in_options.keyExists<std::vector<double>>("channel-freqs")) 
+    {
+        channelFreqs = in_options.get<std::vector<double>>("channel-freqs");
+        if (controlFuncs.size() != channelFreqs.size())
+        {
+            xacc::error("The number of control functions must match the number of LO frequencies.");
+            return;
+        }
+    }
+
     if (dimension < 1 || dimension > 10)
     {
         xacc::error("Invalid system dimension.");
@@ -616,7 +636,7 @@ void PulseOptimGOAT::setOptions(const HeterogeneousMap& in_options)
 
     // We have a valid set of paramters here.
     m_hamiltonian = std::make_unique<GoatHamiltonian>();
-    m_hamiltonian->construct(dimension, H0, controlOps, controlFuncs, controlParams);
+    m_hamiltonian->construct(dimension, H0, controlOps, controlFuncs, controlParams, channelFreqs);
     // All parameters have been validated: construct the GOAT pulse optimizer
     m_goatOptimizer = std::make_unique<GOAT_PulseOptim>(targetUmat, m_hamiltonian->hamiltonian, m_hamiltonian->dHda, initParams, tMax, nullptr, std::move(gradientOptimizer));
 }

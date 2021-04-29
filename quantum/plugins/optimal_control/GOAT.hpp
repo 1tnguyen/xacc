@@ -38,12 +38,14 @@ using costFunctionalGradient = std::function<std::vector<double>(costFunctional,
 struct IIntegrator
 {
     virtual Matrix integrate(const Hamiltonian& in_hamiltonian, const dHdalpha& in_dHda, const OptimParams& in_params, double in_stopTime) = 0;
+    virtual ~IIntegrator() {}
 };
 
 // Abstract gradient-based step search (e.g. BFGS)
 struct IGradientStepper
 {
     virtual void optimize(xacc::OptFunction* io_problem, const OptimParams& in_initialParams) = 0;
+    virtual ~IGradientStepper() {}
 };
 
 struct GoatHamiltonian
@@ -53,7 +55,8 @@ struct GoatHamiltonian
     int dimension;
     std::vector<std::pair<std::string, Matrix>> hamOps;
     std::vector<std::string> params;
-    void construct(int in_dimension, const std::string& in_H0, const std::vector<std::string>& in_Hi, const std::vector<std::string>& in_fi, const std::vector<std::string>& in_params);
+    std::vector<double> lo_freqs;
+    void construct(int in_dimension, const std::string& in_H0, const std::vector<std::string>& in_Hi, const std::vector<std::string>& in_fi, const std::vector<std::string>& in_params, const std::vector<double>& in_loFreqs);
 private:
     // Cache of the symbol table that are used by the expressions.
     // These symbols are linked to m_paramVals and m_time.
