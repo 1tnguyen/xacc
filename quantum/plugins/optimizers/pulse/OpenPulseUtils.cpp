@@ -250,6 +250,28 @@ HamiltonianTimeIndependentTerm::fromString(const std::string &in_string,
   // Reverse the vector list since we were parsing operators from the back.
   std::reverse(operators.begin(), operators.end());
 
+  // Handle number/occupation operator ==> convert to Pauli op:
+  if ((operators.size() == 1 && operators[0].first == xacc::Operator::O) ||
+      (operators.size() == 2 && operators[0].first == xacc::Operator::O &&
+       operators[1].first == xacc::Operator::O)) {
+    // OO == O = (I - Z)/2.0
+    std::vector<std::unique_ptr<HamiltonianTerm>> terms;
+    auto idOp = operators[0];
+    idOp.first = xacc::Operator::I;
+    auto iterm = std::make_unique<HamiltonianTimeIndependentTerm>(
+        std::complex<double>(evaled / 2.0), std::vector<QubitOp>{idOp});
+    auto pauliZOp = operators[0];
+    pauliZOp.first = xacc::Operator::Z;
+    auto zterm = std::make_unique<HamiltonianTimeIndependentTerm>(
+        std::complex<double>(-evaled / 2.0), std::vector<QubitOp>{pauliZOp});
+
+    terms.emplace_back(std::move(iterm));
+    terms.emplace_back(std::move(zterm));
+
+    return std::unique_ptr<HamiltonianTerm>(
+        new HamiltonianSumTerm(std::move(terms)));
+  }
+
   return std::make_unique<HamiltonianTimeIndependentTerm>(evaled, operators);
 }
 
@@ -415,9 +437,9 @@ void HamiltonianTimeIndependentTerm::collect(
 
   if (m_operators.size() == 1) {
     const auto op = m_operators.front();
-    const std::string hStr = "+ " + std::to_string(m_coefficient.real()) + " " +
+    const std::string hStr = (op.first != xacc::Operator::I) ? ("+ " + std::to_string(m_coefficient.real()) + " " +
                              OperatorToString(op.first) +
-                             std::to_string(op.second);
+                             std::to_string(op.second)) : ("+ " + std::to_string(m_coefficient.real()));
     // Debug:
     std::cout << "add static H string: " << hStr << "\n";
     io_staticHstr.append(hStr);

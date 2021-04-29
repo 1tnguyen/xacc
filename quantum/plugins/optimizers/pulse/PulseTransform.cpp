@@ -296,6 +296,21 @@ PulseTransform::parseDeviceInfo(const HeterogeneousMap &exe_data) const {
 
     parsed_term->collect(result.H0, result.controlOps, result.controlChannels);
   }
+
+  const auto replaceAll = [](std::string &str, const std::string &from,
+                             const std::string &to) {
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+      str.replace(start_pos, from.length(), to);
+      start_pos += to.length();
+    }
+  };
+
+  // Replace the plus of minus number to minus.
+  replaceAll(result.H0, "+ -", " - ");
+  if (!result.H0.empty() && result.H0[0] == '+') {
+    result.H0 = result.H0.substr(1);
+  }
   // Debug:
   std::cout << "Static Ham: " << result.H0 << "\n";
   for (const auto &control_ham : result.controlOps) {
