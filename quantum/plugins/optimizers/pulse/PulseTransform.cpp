@@ -187,6 +187,8 @@ void PulseTransform::apply(std::shared_ptr<CompositeInstruction> program,
   if (!opt_info.drive_channel_freqs.empty()) {
     pulseOptimConfigs.insert("channel-freqs", opt_info.drive_channel_freqs);
   }
+
+  pulseOptimConfigs.merge(options);
   auto optimizer = xacc::getOptimizer("quantum-control", pulseOptimConfigs);
   // Perform pulse IR transformation
   const auto optimResult = optimizer->optimize();

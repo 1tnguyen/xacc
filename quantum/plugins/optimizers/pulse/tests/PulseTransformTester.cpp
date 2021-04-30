@@ -137,25 +137,21 @@ TEST(PulseTransformTester, checkSimple)
     }
 }
 
-TEST(PulseTransformTester, checkAerPulseTransform) {
-  auto compiler = xacc::getService<xacc::Compiler>("xasm");
-  auto program = compiler
-                     ->compile(
-                         R"(__qpu__ void testSimpleH(qbit q) {
-                X(q[0]);
-            })")
-                     ->getComposites()[0];
-  auto irt = xacc::getService<IRTransformation>("quantum-control");
-  auto qpu = xacc::getAccelerator("aer:ibmq_armonk");
-  irt->apply(program, qpu,
-             {{"method", "GOAT"},
-              {"max-time", 100.0},
-              {"control-params", std::vector<std::string>{"sigma"}},
-              {"control-funcs",
-               std::vector<std::string>{"0.062831853*exp(-t^2/(2*sigma^2))"}},
-              {"initial-parameters", std::vector<double>{8.0}}});
-  std::cout << "HOWDY:\n" << program->toString() << "\n";
-}
+// TEST(PulseTransformTester, checkAerPulseTransform) {
+//   auto compiler = xacc::getService<xacc::Compiler>("xasm");
+//   auto program = compiler
+//                      ->compile(
+//                          R"(__qpu__ void testSimpleH(qbit q) {
+//                 X(q[0]);
+//             })")
+//                      ->getComposites()[0];
+//   auto irt = xacc::getService<IRTransformation>("quantum-control");
+//   auto qpu = xacc::getAccelerator("aer:ibmq_armonk");
+//   // 'eps' is step size multiplier
+//   irt->apply(program, qpu,
+//              {{"method", "GRAPE"}, {"max-time", (double) 40.0}, {"eps", (double) 2.0}});
+//   std::cout << "HOWDY:\n" << program->toString() << "\n";
+// }
 
 int main(int argc, char **argv) 
 {
