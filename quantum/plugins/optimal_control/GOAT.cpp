@@ -101,7 +101,49 @@ Matrix kron(const Matrix& in_mat1, const Matrix& in_mat2)
 
     return resultMat;
 }
+
+// If the matrix is finite: no NaN elements
+template <typename Derived>
+inline bool isFinite(const Eigen::MatrixBase<Derived> &x) {
+  return ((x - x).array() == (x - x).array()).all();
 }
+constexpr double TOLERANCE = 1e-6;
+
+bool allClose(const Eigen::MatrixXcd &in_mat1, const Eigen::MatrixXcd &in_mat2,
+              double in_tol = TOLERANCE) {
+  if (!isFinite(in_mat1) || !isFinite(in_mat2)) {
+    return false;
+  }
+
+  if (in_mat1.rows() == in_mat2.rows() && in_mat1.cols() == in_mat2.cols()) {
+    for (int i = 0; i < in_mat1.rows(); ++i) {
+      for (int j = 0; j < in_mat1.cols(); ++j) {
+        if (std::abs(in_mat1(i, j) - in_mat2(i, j)) > in_tol) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+  return false;
+}
+
+inline bool isSquare(const Eigen::MatrixXcd &in_mat) {
+  return in_mat.rows() == in_mat.cols();
+}
+
+bool isUnitary(const Eigen::MatrixXcd &in_mat) {
+  if (!isSquare(in_mat) || !isFinite(in_mat)) {
+    return false;
+  }
+
+  Eigen::MatrixXcd Id =
+      Eigen::MatrixXcd::Identity(in_mat.rows(), in_mat.cols());
+
+  return allClose(in_mat * in_mat.adjoint(), Id);
+}
+} // namespace
 
 namespace xacc {
 Matrix GOAT_PulseOptim::constructMatrixFromPauliString(const std::string& in_pauliString, int in_dimension)
@@ -313,6 +355,14 @@ double GOAT_PulseOptim::eval(const OptimParams& in_params, std::vector<double>& 
     }; 
 
     const auto uMat = integrateResult(Eigen::seqN(0, dimH), Eigen::all);
+    
+    if(!isUnitary(uMat)) 
+    {
+        std::stringstream ss;
+        ss << "Failed U integration:\n" << uMat << "\n";
+        xacc::error(ss.str());
+    }
+    
     std::vector<Matrix> duMats;
     for (int i = 0; i < params.size(); ++i)
     {
