@@ -283,17 +283,17 @@ PulseTransform::parseDeviceInfo(const HeterogeneousMap &exe_data) const {
   result.dt = exe_data.get<double>("dt");
   result.drive_channel_freqs =
       exe_data.get<std::vector<double>>("qubit_freq_est");
-  std::cout << "Ham:\n" << ham_json << "\n";
+  // std::cout << "Ham:\n" << ham_json << "\n";
   auto ham = nlohmann::json::parse(ham_json);
   auto h_str = ham["h_str"].get<std::vector<std::string>>();
   auto vars = ham["vars"].get<std::unordered_map<std::string, double>>();
-  for (const auto &[name, val] : vars) {
-    std::cout << name << " = " << val << "\n";
-  }
+  // for (const auto &[name, val] : vars) {
+  //   std::cout << name << " = " << val << "\n";
+  // }
 
   auto parser = xacc::getService<xacc::HamiltonianParsingUtil>("default");
   for (auto &term : h_str) {
-    std::cout << "term: " << term << "\n";
+    // std::cout << "term: " << term << "\n";
     auto parsed_term = parser->tryParse(term, vars);
     if (parsed_term == nullptr) {
       xacc::error("Failed to parse: '" + term + "'");
@@ -317,10 +317,10 @@ PulseTransform::parseDeviceInfo(const HeterogeneousMap &exe_data) const {
     result.H0 = result.H0.substr(1);
   }
   // Debug:
-  std::cout << "Static Ham: " << result.H0 << "\n";
-  for (const auto &control_ham : result.controlOps) {
-    std::cout << "Control Ham: " << control_ham << "\n";
-  }
+  // std::cout << "Static Ham: " << result.H0 << "\n";
+  // for (const auto &control_ham : result.controlOps) {
+  //   std::cout << "Control Ham: " << control_ham << "\n";
+  // }
   return result;
 }
 } // namespace quantum

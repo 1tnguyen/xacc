@@ -107,7 +107,7 @@ template <typename Derived>
 inline bool isFinite(const Eigen::MatrixBase<Derived> &x) {
   return ((x - x).array() == (x - x).array()).all();
 }
-constexpr double TOLERANCE = 1e-6;
+constexpr double TOLERANCE = 1e-3;
 
 bool allClose(const Eigen::MatrixXcd &in_mat1, const Eigen::MatrixXcd &in_mat2,
               double in_tol = TOLERANCE) {
@@ -153,6 +153,11 @@ Matrix GOAT_PulseOptim::constructMatrixFromPauliString(const std::string& in_pau
     std::complex<double> coefficient = 1.0;
     for (auto termIter = hamiltonianOps->begin(); termIter != hamiltonianOps->end(); ++termIter)
     {
+        if (termIter->second.isIdentity()) 
+        {
+            // Skip identity term
+            continue;
+        }
         coefficient = coefficient * termIter->second.coeff();
         std::unordered_map<int, std::string> qubitIdxToPauliOp;
         for (const auto& termOp : termIter->second.ops())
@@ -247,7 +252,7 @@ void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, cons
             m_paramVals = in_paramVals;
             m_time = in_time;
             const auto evaled = expression.value();
-            hamMat = hamMat + evaled * hamOps[i].second * std::exp(-I * 2.0 * M_PI * lo_freqs[i] * m_time);
+            hamMat = hamMat + evaled * hamOps[i].second * std::cos(2.0 * M_PI * lo_freqs[i] * m_time);
         }
         
         return hamMat;
@@ -268,7 +273,7 @@ void GoatHamiltonian::construct(int in_dimension, const std::string& in_H0, cons
                 m_time = in_time;
                 // Calculate the derivative w.r.t. the parameter
                 const auto derivativeEvaled = exprtk::derivative(expression, params[idx]);
-                hamMat = hamMat + derivativeEvaled * hamOps[i].second  * std::exp(-I * 2.0 * M_PI * lo_freqs[i] * m_time);
+                hamMat = hamMat + derivativeEvaled * hamOps[i].second  * std::cos(2.0 * M_PI * lo_freqs[i] * m_time);
             }
             
             return hamMat;
@@ -355,14 +360,6 @@ double GOAT_PulseOptim::eval(const OptimParams& in_params, std::vector<double>& 
     }; 
 
     const auto uMat = integrateResult(Eigen::seqN(0, dimH), Eigen::all);
-    
-    if(!isUnitary(uMat)) 
-    {
-        std::stringstream ss;
-        ss << "Failed U integration:\n" << uMat << "\n";
-        xacc::error(ss.str());
-    }
-    
     std::vector<Matrix> duMats;
     for (int i = 0; i < params.size(); ++i)
     {
@@ -446,6 +443,9 @@ Matrix GOAT_PulseOptim::DefaultIntegrator::integrate(const Hamiltonian& in_hamil
    
         // Propagate U 
         U = uProgagator.step(currentTime, U, m_dt);
+        
+        // std::cout << U << "\n";
+        // assert(isUnitary(U));
         // Propagate dUdalpha (params)
         for (int j = 0; j < nbParams; ++j)
         {
@@ -469,7 +469,7 @@ void GOAT_PulseOptim::DefaultGradientStepper::optimize(xacc::OptFunction* io_pro
     // Set up parameters
     LBFGSpp::LBFGSParam<double> param;
     param.epsilon = 1e-6;
-    param.max_iterations = 50;
+    param.max_iterations = 100;
     LBFGSpp::LBFGSSolver<double> solver(param);
     
     double fx = 0.0;

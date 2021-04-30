@@ -441,7 +441,7 @@ void HamiltonianTimeIndependentTerm::collect(
                              OperatorToString(op.first) +
                              std::to_string(op.second)) : ("+ " + std::to_string(m_coefficient.real()));
     // Debug:
-    std::cout << "add static H string: " << hStr << "\n";
+    // std::cout << "add static H string: " << hStr << "\n";
     io_staticHstr.append(hStr);
   } else if (m_operators.size() == 2) {
     const auto op1 = m_operators[0];
@@ -453,7 +453,7 @@ void HamiltonianTimeIndependentTerm::collect(
         OperatorToString(op2.first) + std::to_string(op2.second);
 
     // Debug:
-    std::cout << "add static H string: " << hStr << "\n";
+    // std::cout << "add static H string: " << hStr << "\n";
     io_staticHstr.append(hStr);
   }
 }
@@ -470,7 +470,7 @@ void HamiltonianTimeDependentTerm::collect(
                              OperatorToString(op.first) +
                              std::to_string(op.second);
     // Debug:
-    std::cout << "add control H string: " << hStr << "\n";
+    // std::cout << "add control H string: " << hStr << "\n";
     io_ctrlHstr.emplace_back(hStr);
   } else if (m_operators.size() == 2) {
     const auto op1 = m_operators[0];
@@ -482,7 +482,7 @@ void HamiltonianTimeDependentTerm::collect(
         std::to_string(op2.second);
 
     // Debug:
-    std::cout << "add control H string: " << hStr << "\n";
+    // std::cout << "add control H string: " << hStr << "\n";
     io_ctrlHstr.emplace_back(hStr);
   }
 }

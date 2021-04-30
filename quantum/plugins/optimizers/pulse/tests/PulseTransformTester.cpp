@@ -142,12 +142,18 @@ TEST(PulseTransformTester, checkAerPulseTransform) {
   auto program = compiler
                      ->compile(
                          R"(__qpu__ void testSimpleH(qbit q) {
-                H(q[0]);
+                X(q[0]);
             })")
                      ->getComposites()[0];
   auto irt = xacc::getService<IRTransformation>("quantum-control");
   auto qpu = xacc::getAccelerator("aer:ibmq_armonk");
-  irt->apply(program, qpu);
+  irt->apply(program, qpu,
+             {{"method", "GOAT"},
+              {"max-time", 100.0},
+              {"control-params", std::vector<std::string>{"sigma"}},
+              {"control-funcs",
+               std::vector<std::string>{"0.062831853*exp(-t^2/(2*sigma^2))"}},
+              {"initial-parameters", std::vector<double>{8.0}}});
   std::cout << "HOWDY:\n" << program->toString() << "\n";
 }
 
