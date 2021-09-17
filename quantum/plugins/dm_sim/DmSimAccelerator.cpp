@@ -11,7 +11,7 @@
  *   Thien Nguyen - initial API and implementation
  *******************************************************************************/
 #include "DmSimAccelerator.hpp"
-
+#include "DmSimApi.hpp"
 namespace xacc {
 namespace quantum {
 
