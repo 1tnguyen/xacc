@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include "Identifiable.hpp"
-
 namespace xacc {
 namespace DMSim {
 enum class OP {

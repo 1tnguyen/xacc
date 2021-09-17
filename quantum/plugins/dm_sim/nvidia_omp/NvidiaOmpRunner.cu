@@ -9,7 +9,7 @@ public:
   virtual const std::string name() const override { return "nvidia-omp"; }
   virtual const std::string description() const override { return ""; }
   virtual void init(int n_qubits, int n_gpus) override {
-    m_sim = std::make_shared<DMSim::Simulation>(n_qubits, n_gpus);
+    m_sim = std::make_shared<::DMSim::Simulation>(n_qubits, n_gpus);
   }
   virtual void addGate(OP op, const std::vector<int> &qubits,
                        const std::vector<double> &params) override {
@@ -18,97 +18,97 @@ public:
       assert(qubits.size() == 1);
       assert(params.size() == 3);
       m_sim->append(
-          DMSim::Simulation::U3(params[0], params[1], params[2], qubits[0]));
+          ::DMSim::Simulation::U3(params[0], params[1], params[2], qubits[0]));
       break;
     case OP::U2:
       assert(qubits.size() == 1);
       assert(params.size() == 2);
-      m_sim->append(DMSim::Simulation::U2(params[0], params[1], qubits[0]));
+      m_sim->append(::DMSim::Simulation::U2(params[0], params[1], qubits[0]));
       break;
     case OP::U1:
       assert(qubits.size() == 1);
       assert(params.size() == 1);
-      m_sim->append(DMSim::Simulation::U1(params[0], qubits[0]));
+      m_sim->append(::DMSim::Simulation::U1(params[0], qubits[0]));
       break;
     case OP::CX:
       assert(qubits.size() == 2);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::CX(qubits[0], qubits[1]));
+      m_sim->append(::DMSim::Simulation::CX(qubits[0], qubits[1]));
       break;
     case OP::X:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::X(qubits[0]));
+      m_sim->append(::DMSim::Simulation::X(qubits[0]));
       break;
     case OP::Y:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::Y(qubits[0]));
+      m_sim->append(::DMSim::Simulation::Y(qubits[0]));
       break;
     case OP::Z:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::Z(qubits[0]));
+      m_sim->append(::DMSim::Simulation::Z(qubits[0]));
       break;
     case OP::H:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::H(qubits[0]));
+      m_sim->append(::DMSim::Simulation::H(qubits[0]));
       break;
     case OP::S:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::S(qubits[0]));
+      m_sim->append(::DMSim::Simulation::S(qubits[0]));
       break;
     case OP::SDG:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::SDG(qubits[0]));
+      m_sim->append(::DMSim::Simulation::SDG(qubits[0]));
       break;
     case OP::T:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::T(qubits[0]));
+      m_sim->append(::DMSim::Simulation::T(qubits[0]));
       break;
     case OP::TDG:
       assert(qubits.size() == 1);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::TDG(qubits[0]));
+      m_sim->append(::DMSim::Simulation::TDG(qubits[0]));
       break;
     case OP::RX:
       assert(qubits.size() == 1);
       assert(params.size() == 1);
-      m_sim->append(DMSim::Simulation::RX(params[0], qubits[0]));
+      m_sim->append(::DMSim::Simulation::RX(params[0], qubits[0]));
       break;
     case OP::RY:
       assert(qubits.size() == 1);
       assert(params.size() == 1);
-      m_sim->append(DMSim::Simulation::RY(params[0], qubits[0]));
+      m_sim->append(::DMSim::Simulation::RY(params[0], qubits[0]));
       break;
     case OP::RZ:
       assert(qubits.size() == 1);
       assert(params.size() == 1);
-      m_sim->append(DMSim::Simulation::RZ(params[0], qubits[0]));
+      m_sim->append(::DMSim::Simulation::RZ(params[0], qubits[0]));
       break;
     case OP::CZ:
       assert(qubits.size() == 2);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::CZ(qubits[0], qubits[1]));
+      m_sim->append(::DMSim::Simulation::CZ(qubits[0], qubits[1]));
       break;
     case OP::CY:
       assert(qubits.size() == 2);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::CY(qubits[0], qubits[1]));
+      m_sim->append(::DMSim::Simulation::CY(qubits[0], qubits[1]));
       break;
     case OP::SWAP:
       assert(qubits.size() == 2);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::SWAP(qubits[0], qubits[1]));
+      m_sim->append(::DMSim::Simulation::SWAP(qubits[0], qubits[1]));
       break;
     case OP::CH:
       assert(qubits.size() == 2);
       assert(params.size() == 0);
-      m_sim->append(DMSim::Simulation::SWAP(qubits[0], qubits[1]));
+      m_sim->append(::DMSim::Simulation::SWAP(qubits[0], qubits[1]));
       break;
     case OP::ID:
     case OP::CCX:
@@ -138,10 +138,10 @@ public:
     m_sim->upload();
 
     // Run the simulation
-    sim->sim();
+    m_sim->sim();
 
     // Measure
-    auto *res = sim->measure(shots);
+    auto *res = m_sim->measure(shots);
     std::vector<int64_t> result;
     result.reserve(shots);
     for (int i = 0; i < shots; ++i) {
@@ -154,7 +154,7 @@ public:
   virtual void finalize() override { m_sim.reset(); }
 
 private:
-  std::shared_ptr<DMSim::Simulation> m_sim;
+  std::shared_ptr<::DMSim::Simulation> m_sim;
 };
 } // namespace DMSim
 } // namespace xacc

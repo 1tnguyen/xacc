@@ -3,13 +3,12 @@ FIND_PACKAGE(CUDA REQUIRED)
 # TODO: auto detect this
 SET(CUDA_ARCH_BIN 70)
 SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${CUDA_ARCH_BIN},code=sm_${CUDA_ARCH_BIN} -rdc=true --compiler-options -fPIC")
-
+SET(CUDA_VERBOSE_BUILD ON)
 SET(LIBRARY_NAME xacc-dm-sim-nvidia-omp)
 FILE(GLOB SRC *.cu)
-ADD_LIBRARY("${LIBRARY_NAME}" "${SRC}")
-
-TARGET_LINK_LIBRARIES(${LIBRARY_NAME} PUBLIC ${CUDA_LIBRARIES})
-target_include_directories(${LIBRARY_NAME} PUBLIC . ${CMAKE_SOURCE_DIR}/tpls/dm-sim)
+cuda_add_library(${LIBRARY_NAME} SHARED ${SRC})
+include_directories(${CMAKE_SOURCE_DIR}/xacc/utils)
+cuda_include_directories(${CMAKE_SOURCE_DIR}/tpls/dm-sim)
 SET_TARGET_PROPERTIES("${LIBRARY_NAME}" PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 SET_PROPERTY(TARGET "${LIBRARY_NAME}"  PROPERTY CUDA_STANDARD 17)
 
