@@ -1,12 +1,11 @@
 #include "../DmSimApi.hpp"
 #include "src/util_nvgpu.cuh"
 #include "src/dmsim_nvgpu_omp.cuh"
+#include <memory>
 
 namespace DmSim {
 class NvidiaOmp : public DmSimBackend {
 public:
-  virtual const std::string name() const override { return "nvidia-omp"; }
-  virtual const std::string description() const override { return ""; }
   virtual void init(int n_qubits, int n_gpus) override {
     m_sim = std::make_shared<::DMSim::Simulation>(n_qubits, n_gpus);
   }
