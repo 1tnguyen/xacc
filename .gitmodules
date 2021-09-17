@@ -25,3 +25,6 @@
 [submodule "tpls/qsim"]
 	path = tpls/qsim
 	url = https://github.com/ORNL-QCI/qsim.git
+[submodule "tpls/dm-sim"]
+	path = tpls/dm-sim
+	url = https://github.com/pnnl/DM-Sim.git
