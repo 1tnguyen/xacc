@@ -1,8 +1,6 @@
 #pragma once
 #include <vector>
-#include "Identifiable.hpp"
-namespace xacc {
-namespace DMSim {
+namespace DmSim {
 enum class OP {
   U3,
   U2,
@@ -44,7 +42,7 @@ enum class OP {
   RYY
 };
 
-class DmSimBackend : public Identifiable {
+class DmSimBackend {
 public:
   virtual void init(int n_qubits, int n_gpus = 1) = 0;
   virtual void addGate(OP op, const std::vector<int> &qubits,
@@ -52,5 +50,4 @@ public:
   virtual std::vector<int64_t> measure(int shots) = 0;
   virtual void finalize() = 0;
 };
-} // namespace DMSim
-} // namespace xacc
+} // namespace DmSim

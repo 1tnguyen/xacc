@@ -2,8 +2,7 @@
 #include "src/util_nvgpu.cuh"
 #include "src/dmsim_nvgpu_omp.cuh"
 
-namespace xacc {
-namespace DMSim {
+namespace DmSim {
 class NvidiaOmp : public DmSimBackend {
 public:
   virtual const std::string name() const override { return "nvidia-omp"; }
@@ -118,7 +117,8 @@ public:
     case OP::CRZ:
     case OP::CU1:
     case OP::CU3:
-    case OP::RXX, case OP::RZZ:
+    case OP::RXX:
+    case OP::RZZ:
     case OP::RCCX:
     case OP::RC3X:
     case OP::C3X:
@@ -156,5 +156,4 @@ public:
 private:
   std::shared_ptr<::DMSim::Simulation> m_sim;
 };
-} // namespace DMSim
-} // namespace xacc
+} // namespace DmSim
