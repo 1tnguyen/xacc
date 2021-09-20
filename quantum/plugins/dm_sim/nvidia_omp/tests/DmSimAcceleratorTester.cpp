@@ -6,7 +6,7 @@
 #include "xacc_observable.hpp"
 
 TEST(DmSimAcceleratorTester, testBell) {
-  auto accelerator = xacc::getAccelerator("atos-qlm", {{"shots", 1024}});
+  auto accelerator = xacc::getAccelerator("dm-sim", {{"shots", 1024}});
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program1 = xasmCompiler
                       ->compile(R"(__qpu__ void bell(qbit q) {
@@ -27,7 +27,7 @@ TEST(DmSimAcceleratorTester, testBell) {
 }
 
 TEST(DmSimAcceleratorTester, testExpVal) {
-  auto accelerator = xacc::getAccelerator("atos-qlm");
+  auto accelerator = xacc::getAccelerator("dm-sim");
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program1 = xasmCompiler
                       ->compile(R"(__qpu__ void test1(qbit q) {
@@ -70,7 +70,7 @@ TEST(DmSimAcceleratorTester, testExpVal) {
 }
 
 TEST(DmSimAcceleratorTester, testParametricGate) {
-  auto accelerator = xacc::getAccelerator("atos-qlm");
+  auto accelerator = xacc::getAccelerator("dm-sim");
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program = xasmCompiler
                      ->compile(R"(__qpu__ void rotation(qbit q, double theta) {
@@ -96,7 +96,7 @@ TEST(DmSimAcceleratorTester, testParametricGate) {
 }
 
 TEST(DmSimAcceleratorTester, testControlGate) {
-  auto accelerator = xacc::getAccelerator("atos-qlm");
+  auto accelerator = xacc::getAccelerator("dm-sim");
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program =
       xasmCompiler
@@ -127,7 +127,7 @@ TEST(DmSimAcceleratorTester, testControlGate) {
 
 TEST(DmSimAcceleratorTester, testU3Gate) {
   // Test U3(theta,−pi/2, pi/2) = RX(theta)
-  auto accelerator = xacc::getAccelerator("atos-qlm");
+  auto accelerator = xacc::getAccelerator("dm-sim");
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program =
       xasmCompiler
