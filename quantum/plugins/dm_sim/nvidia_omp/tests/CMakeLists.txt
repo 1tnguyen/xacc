@@ -1,2 +1,5 @@
 add_xacc_test(DmSimAccelerator)
 target_link_libraries(DmSimAcceleratorTester xacc xacc-quantum-gate)
+
+add_xacc_test(DmSimAcceleratorMultipleGpus)
+target_link_libraries(DmSimAcceleratorMultipleGpusTester xacc xacc-quantum-gate)

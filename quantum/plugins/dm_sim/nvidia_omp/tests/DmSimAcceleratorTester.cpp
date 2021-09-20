@@ -55,18 +55,15 @@ TEST(DmSimAcceleratorTester, testExpVal) {
 
   auto buffer1 = xacc::qalloc(1);
   accelerator->execute(buffer1, program1);
-  EXPECT_EQ(buffer1->getMeasurementCounts().size(), 0);
-  EXPECT_NEAR(buffer1->getExpectationValueZ(), 0.0, 0.01);
+  EXPECT_NEAR(buffer1->getExpectationValueZ(), 0.0, 0.05);
 
   auto buffer2 = xacc::qalloc(1);
   accelerator->execute(buffer2, program2);
-  EXPECT_EQ(buffer2->getMeasurementCounts().size(), 0);
-  EXPECT_NEAR(buffer2->getExpectationValueZ(), -1.0, 0.01);
+  EXPECT_NEAR(buffer2->getExpectationValueZ(), -1.0, 0.05);
 
   auto buffer3 = xacc::qalloc(1);
   accelerator->execute(buffer3, program3);
-  EXPECT_EQ(buffer3->getMeasurementCounts().size(), 0);
-  EXPECT_NEAR(buffer3->getExpectationValueZ(), 1.0, 0.01);
+  EXPECT_NEAR(buffer3->getExpectationValueZ(), 1.0, 0.05);
 }
 
 TEST(DmSimAcceleratorTester, testParametricGate) {
@@ -91,7 +88,7 @@ TEST(DmSimAcceleratorTester, testParametricGate) {
     std::cout << "Angle = " << angles[i]
               << "; result = " << buffer->getExpectationValueZ()
               << " vs expected = " << expectedResult << "\n";
-    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.01);
+    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.05);
   }
 }
 
@@ -121,7 +118,7 @@ TEST(DmSimAcceleratorTester, testControlGate) {
     std::cout << "Angle = " << angles[i]
               << "; result = " << buffer->getExpectationValueZ()
               << " vs expected = " << expectedResult << "\n";
-    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.01);
+    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.05);
   }
 }
 
@@ -149,7 +146,7 @@ TEST(DmSimAcceleratorTester, testU3Gate) {
     std::cout << "Angle = " << angles[i]
               << "; result = " << buffer->getExpectationValueZ()
               << " vs expected = " << expectedResult << "\n";
-    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.01);
+    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.05);
   }
 }
 
