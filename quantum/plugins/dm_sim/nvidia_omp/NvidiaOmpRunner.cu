@@ -155,4 +155,8 @@ public:
 private:
   std::shared_ptr<::DMSim::Simulation> m_sim;
 };
+std::shared_ptr<DmSimBackend> getGpuDmSim() {
+  std::cout << "HOWDY: create DmSim runner\n";
+  return std::make_shared<NvidiaOmp>();
+}
 } // namespace DmSim

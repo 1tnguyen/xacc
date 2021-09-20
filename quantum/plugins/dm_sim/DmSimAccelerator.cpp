@@ -13,6 +13,7 @@
 #include "DmSimAccelerator.hpp"
 #include "DmSimApi.hpp"
 #include "AllGateVisitor.hpp"
+#include "xacc_plugin.hpp"
 namespace xacc {
 namespace quantum {
 class DmSimCircuitVisitor : public AllGateVisitor {
@@ -181,3 +182,4 @@ void DmSimAccelerator::execute(
 }
 } // namespace quantum
 } // namespace xacc
+REGISTER_ACCELERATOR(xacc::quantum::DmSimAccelerator)
