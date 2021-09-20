@@ -38,6 +38,10 @@ public:
   virtual void execute(std::shared_ptr<AcceleratorBuffer> buffer,
                        const std::vector<std::shared_ptr<CompositeInstruction>>
                            compositeInstructions) override;
+
+private:
+  int m_ngpus;
+  int m_shots;
 };
 } // namespace quantum
 } // namespace xacc

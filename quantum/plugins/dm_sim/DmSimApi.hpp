@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <memory>
+
 namespace DmSim {
 enum class OP {
   U3,
@@ -50,4 +52,12 @@ public:
   virtual std::vector<int64_t> measure(int shots) = 0;
   virtual void finalize() = 0;
 };
+
+#ifdef XACC_HAS_CUDA
+// Provided at by linking in the CUDA implementation
+// TODO: use CppMicroservices registry (fixing nvcc compiling with Identifiable)
+extern std::shared_ptr<DmSimBackend> getGpuDmSim();
+#else
+inline std::shared_ptr<DmSimBackend> getGpuDmSim() { return nullptr;}
+#endif
 } // namespace DmSim

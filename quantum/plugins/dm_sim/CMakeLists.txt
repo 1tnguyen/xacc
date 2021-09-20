@@ -47,6 +47,7 @@ install(TARGETS ${LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins)
 
 find_package (CUDA)
 if (CUDA_FOUND)
+  add_definitions(-DXACC_HAS_CUDA)
   message(STATUS "CUDA found. Add DM-Sim NVIDIA-based accelerator.")
   add_subdirectory(nvidia_omp)
 endif (CUDA_FOUND)
