@@ -108,13 +108,29 @@ public:
       assert(params.size() == 0);
       m_sim->append(::DMSim::Simulation::SWAP(qubits[0], qubits[1]));
       break;
+    case OP::CRX:
+      assert(qubits.size() == 2);
+      assert(params.size() == 1);
+      m_sim->append(::DMSim::Simulation::CRX(params[0], qubits[0], qubits[1]));
+      break;
+    case OP::CRY:
+      assert(qubits.size() == 2);
+      assert(params.size() == 1);
+      m_sim->append(::DMSim::Simulation::CRY(params[0], qubits[0], qubits[1]));
+      break;
+    case OP::CRZ:
+      assert(qubits.size() == 2);
+      assert(params.size() == 1);
+      m_sim->append(::DMSim::Simulation::CRZ(params[0], qubits[0], qubits[1]));
+      break;
+    case OP::CU1:
+      assert(qubits.size() == 2);
+      assert(params.size() == 1);
+      m_sim->append(::DMSim::Simulation::CU1(params[0], qubits[0], qubits[1]));
+      break;
     case OP::ID:
     case OP::CCX:
     case OP::CSWAP:
-    case OP::CRX:
-    case OP::CRY:
-    case OP::CRZ:
-    case OP::CU1:
     case OP::CU3:
     case OP::RXX:
     case OP::RZZ:
@@ -146,7 +162,7 @@ public:
     for (int i = 0; i < shots; ++i) {
       result.emplace_back(res[i]);
     }
-
+    delete res;
     return result;
   }
 
