@@ -115,7 +115,7 @@ public:
     const auto phi = InstructionParameterToDouble(u.getParameter(1));
     const auto lambda = InstructionParameterToDouble(u.getParameter(2));
 
-    m_backend->addGate(DmSim::OP::H, std::vector<int>{(int)u.bits()[0]},
+    m_backend->addGate(DmSim::OP::U3, std::vector<int>{(int)u.bits()[0]},
                        {theta, phi, lambda});
   }
 
