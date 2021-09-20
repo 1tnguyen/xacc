@@ -167,18 +167,33 @@ void DmSimAccelerator::execute(
       measured_bits.emplace_back(i);
     }
   }
+  std::sort(measured_bits.begin(), measured_bits.end());
   const auto measured_results = dm_sim->measure(m_shots);
-  // TODO: add shots data to buffer:
-  std::cout << "HOWDY: measure results:\n";
+  const auto dmSimMeasureToBitString = [&measured_bits](const auto &val) {
+    std::string bitString;
+    for (const auto &bit : measured_bits) {
+      if (val & (1ULL << bit)) {
+        bitString.push_back('1');
+      } else {
+        bitString.push_back('0');
+      }
+    }
+    return bitString;
+  };
   for (const auto &m : measured_results) {
-    std::cout << m << "\n";
+    buffer->appendMeasurement(dmSimMeasureToBitString(m));
   }
 }
 void DmSimAccelerator::execute(
     std::shared_ptr<AcceleratorBuffer> buffer,
     const std::vector<std::shared_ptr<CompositeInstruction>>
         compositeInstructions) {
-  // TODO
+  for (auto &f : compositeInstructions) {
+    auto tmpBuffer =
+        std::make_shared<xacc::AcceleratorBuffer>(f->name(), buffer->size());
+    execute(tmpBuffer, f);
+    buffer->appendChild(f->name(), tmpBuffer);
+  }
 }
 } // namespace quantum
 } // namespace xacc
