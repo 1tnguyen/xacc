@@ -27,7 +27,7 @@ TEST(DmSimAcceleratorTester, testBell) {
 }
 
 TEST(DmSimAcceleratorTester, testExpVal) {
-  auto accelerator = xacc::getAccelerator("dm-sim");
+  auto accelerator = xacc::getAccelerator("dm-sim", {{"shots", 8192}});
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program1 = xasmCompiler
                       ->compile(R"(__qpu__ void test1(qbit q) {
@@ -56,21 +56,21 @@ TEST(DmSimAcceleratorTester, testExpVal) {
   auto buffer1 = xacc::qalloc(1);
   accelerator->execute(buffer1, program1);
   EXPECT_EQ(buffer1->getMeasurementCounts().size(), 0);
-  EXPECT_NEAR(buffer1->getExpectationValueZ(), 0.0, 1e-9);
+  EXPECT_NEAR(buffer1->getExpectationValueZ(), 0.0, 0.01);
 
   auto buffer2 = xacc::qalloc(1);
   accelerator->execute(buffer2, program2);
   EXPECT_EQ(buffer2->getMeasurementCounts().size(), 0);
-  EXPECT_NEAR(buffer2->getExpectationValueZ(), -1.0, 1e-9);
+  EXPECT_NEAR(buffer2->getExpectationValueZ(), -1.0, 0.01);
 
   auto buffer3 = xacc::qalloc(1);
   accelerator->execute(buffer3, program3);
   EXPECT_EQ(buffer3->getMeasurementCounts().size(), 0);
-  EXPECT_NEAR(buffer3->getExpectationValueZ(), 1.0, 1e-9);
+  EXPECT_NEAR(buffer3->getExpectationValueZ(), 1.0, 0.01);
 }
 
 TEST(DmSimAcceleratorTester, testParametricGate) {
-  auto accelerator = xacc::getAccelerator("dm-sim");
+  auto accelerator = xacc::getAccelerator("dm-sim", {{"shots", 8192}});
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program = xasmCompiler
                      ->compile(R"(__qpu__ void rotation(qbit q, double theta) {
@@ -91,12 +91,12 @@ TEST(DmSimAcceleratorTester, testParametricGate) {
     std::cout << "Angle = " << angles[i]
               << "; result = " << buffer->getExpectationValueZ()
               << " vs expected = " << expectedResult << "\n";
-    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 1e-6);
+    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.01);
   }
 }
 
 TEST(DmSimAcceleratorTester, testControlGate) {
-  auto accelerator = xacc::getAccelerator("dm-sim");
+  auto accelerator = xacc::getAccelerator("dm-sim", {{"shots", 8192}});
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program =
       xasmCompiler
@@ -121,13 +121,13 @@ TEST(DmSimAcceleratorTester, testControlGate) {
     std::cout << "Angle = " << angles[i]
               << "; result = " << buffer->getExpectationValueZ()
               << " vs expected = " << expectedResult << "\n";
-    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 1e-6);
+    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.01);
   }
 }
 
 TEST(DmSimAcceleratorTester, testU3Gate) {
   // Test U3(theta,−pi/2, pi/2) = RX(theta)
-  auto accelerator = xacc::getAccelerator("dm-sim");
+  auto accelerator = xacc::getAccelerator("dm-sim", {{"shots", 8192}});
   auto xasmCompiler = xacc::getCompiler("xasm");
   auto program =
       xasmCompiler
@@ -149,7 +149,7 @@ TEST(DmSimAcceleratorTester, testU3Gate) {
     std::cout << "Angle = " << angles[i]
               << "; result = " << buffer->getExpectationValueZ()
               << " vs expected = " << expectedResult << "\n";
-    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 1e-6);
+    EXPECT_NEAR(buffer->getExpectationValueZ(), expectedResult, 0.01);
   }
 }
 
