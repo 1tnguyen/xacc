@@ -34,16 +34,13 @@ PulseMappingVisitor::PulseMappingVisitor() {
 
 void PulseMappingVisitor::visit(Hadamard &h) {
   const auto commandDef = constructPulseCommandDef(h);
-
+  // If there is a custom pulse provided for Hadamard gate:
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // H = U2(0, pi) = U3(pi/2, 0, pi)
-    const auto asU2 = constructUCmdDefComposite(h.bits()[0], "u2");
-    auto hCmdDef =
-        (*asU2)({0.0, M_PI});
-    pulseComposite->addInstruction(hCmdDef);
+    // Just keep the gate as-is (digital gate)
+    pulseComposite->addInstruction(h.clone());
   }
 }
 
@@ -52,6 +49,8 @@ void PulseMappingVisitor::visit(CNOT &cnot) {
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
+  } else {
+    pulseComposite->addInstruction(cnot.clone());
   }
 }
 
@@ -62,10 +61,7 @@ void PulseMappingVisitor::visit(Rz &rz) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // Rz(theta) = U1(theta) = U3(0, 0, theta)
-    const auto asU1 = constructUCmdDefComposite(rz.bits()[0], "u1");
-    auto rzCmdDef = (*asU1)({rz.getParameter(0).as<double>()});
-    pulseComposite->addInstruction(rzCmdDef);
+    pulseComposite->addInstruction(rz.clone());
   }
 }
 
@@ -76,10 +72,7 @@ void PulseMappingVisitor::visit(Ry &ry) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // Ry(theta) = U3(theta, 0, 0)
-    const auto asU3 = constructUCmdDefComposite(ry.bits()[0], "u3");
-    auto ryCmdDef = (*asU3)({ry.getParameter(0).as<double>(), 0.0, 0.0});
-    pulseComposite->addInstruction(ryCmdDef);
+    pulseComposite->addInstruction(ry.clone());
   }
 }
 
@@ -90,12 +83,7 @@ void PulseMappingVisitor::visit(Rx &rx) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // Rx(theta) = U3(theta, -pi/2, pi/2)
-    const auto asU3 = constructUCmdDefComposite(rx.bits()[0], "u3");
-    auto rxCmdDef =
-        (*asU3)({rx.getParameter(0).as<double>(), -M_PI/ 2.0,
-                 M_PI/ 2.0});
-    pulseComposite->addInstruction(rxCmdDef);
+    pulseComposite->addInstruction(rx.clone());
   }
 }
 
@@ -106,10 +94,7 @@ void PulseMappingVisitor::visit(X &x) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // X = U3(pi, 0, pi)
-    const auto asU3 = constructUCmdDefComposite(x.bits()[0], "u3");
-    auto xCmdDef = (*asU3)({M_PI, 0.0, M_PI});
-    pulseComposite->addInstruction(xCmdDef);
+    pulseComposite->addInstruction(x.clone());
   }
 }
 
@@ -120,11 +105,7 @@ void PulseMappingVisitor::visit(Y &y) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // Y = U3(pi, pi/2, pi/2)
-    const auto asU3 = constructUCmdDefComposite(y.bits()[0], "u3");
-    auto yCmdDef = (*asU3)({M_PI, M_PI/ 2.0,
-                            M_PI/ 2.0});
-    pulseComposite->addInstruction(yCmdDef);
+    pulseComposite->addInstruction(y.clone());
   }
 }
 
@@ -135,10 +116,7 @@ void PulseMappingVisitor::visit(Z &z) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // Z = U1(pi) = U3(0, 0, pi)
-    const auto asU1 = constructUCmdDefComposite(z.bits()[0], "u1");
-    auto zCmdDef = (*asU1)({M_PI});
-    pulseComposite->addInstruction(zCmdDef);
+   pulseComposite->addInstruction(z.clone());
   }
 }
 
@@ -177,18 +155,16 @@ void PulseMappingVisitor::visit(CRZ &crz) {
   // CX(a,b);
   const double theta = crz.getParameter(0).as<double>();
   {
-    const auto asU1 = constructUCmdDefComposite(crz.bits()[1], "u1");
-    auto cmdDef = (*asU1)({theta / 2.0});
-    pulseComposite->addInstruction(cmdDef);
+    Rz rz1(crz.bits()[1], theta / 2);
+    visit(rz1);
   }
   {
     auto cx = std::make_shared<CNOT>(crz.bits());
     visit(*cx);
   }
   {
-    const auto asU1 = constructUCmdDefComposite(crz.bits()[1], "u1");
-    auto cmdDef = (*asU1)({-theta / 2.0});
-    pulseComposite->addInstruction(cmdDef);
+    Rz rz2(crz.bits()[1], -theta / 2);
+    visit(rz2);
   }
   {
     auto cx = std::make_shared<CNOT>(crz.bits());
@@ -235,10 +211,7 @@ void PulseMappingVisitor::visit(S &s) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // S = U1(pi/2) = U3(0,0,pi/2)
-    const auto asU1 = constructUCmdDefComposite(s.bits()[0], "u1");
-    auto sCmdDef = (*asU1)({M_PI/ 2.0});
-    pulseComposite->addInstruction(sCmdDef);
+    pulseComposite->addInstruction(s.clone());
   }
 }
 
@@ -249,10 +222,7 @@ void PulseMappingVisitor::visit(Sdg &sdg) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // S-dagger = U1(-pi/2) = U3(0,0,-pi/2)
-    const auto asU1 = constructUCmdDefComposite(sdg.bits()[0], "u1");
-    auto sdgCmdDef = (*asU1)({-M_PI/ 2.0});
-    pulseComposite->addInstruction(sdgCmdDef);
+    pulseComposite->addInstruction(sdg.clone());
   }
 }
 
@@ -263,10 +233,7 @@ void PulseMappingVisitor::visit(T &t) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // T = U1(pi/4) = U3(0,0,pi/4)
-    const auto asU1 = constructUCmdDefComposite(t.bits()[0], "u1");
-    auto tCmdDef = (*asU1)({M_PI/ 4.0});
-    pulseComposite->addInstruction(tCmdDef);
+    pulseComposite->addInstruction(t.clone());
   }
 }
 
@@ -277,10 +244,7 @@ void PulseMappingVisitor::visit(Tdg &tdg) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
   } else {
-    // T-dagger = U1(-pi/4) = U3(0,0,-pi/4)
-    const auto asU1 = constructUCmdDefComposite(tdg.bits()[0], "u1");
-    auto tdgCmdDef = (*asU1)({-M_PI/ 4.0});
-    pulseComposite->addInstruction(tdgCmdDef);
+    pulseComposite->addInstruction(tdg.clone());
   }
 }
 
@@ -295,27 +259,24 @@ void PulseMappingVisitor::visit(CPhase &cphase) {
   // }
   const double lambda = cphase.getParameter(0).as<double>();
   {
-    const auto asU1 = constructUCmdDefComposite(cphase.bits()[0], "u1");
-    auto cmdDef = (*asU1)({lambda / 2.0});
-    pulseComposite->addInstruction(cmdDef);
+    Rz rz1(cphase.bits()[0], lambda / 2.0);
+    visit(rz1);
   }
   {
     auto cx = std::make_shared<CNOT>(cphase.bits());
     visit(*cx);
   }
   {
-    const auto asU1 = constructUCmdDefComposite(cphase.bits()[1], "u1");
-    auto cmdDef = (*asU1)({-lambda / 2.0});
-    pulseComposite->addInstruction(cmdDef);
+    Rz rz1(cphase.bits()[1], -lambda / 2.0);
+    visit(rz1);
   }
   {
     auto cx = std::make_shared<CNOT>(cphase.bits());
     visit(*cx);
   }
   {
-    const auto asU1 = constructUCmdDefComposite(cphase.bits()[1], "u1");
-    auto cmdDef = (*asU1)({lambda / 2.0});
-    pulseComposite->addInstruction(cmdDef);
+    Rz rz1(cphase.bits()[1], lambda / 2.0);
+    visit(rz1);
   }
 }
 
@@ -324,15 +285,7 @@ void PulseMappingVisitor::visit(Identity &i) {
 }
 
 void PulseMappingVisitor::visit(U &u) {
-  const auto asU3 = constructUCmdDefComposite(u.bits()[0], "u3");
-  // Just pass the params to the cmddef.
-  std::vector<double> params;
-  for (const auto &param : u.getParameters()) {
-    params.emplace_back(param.as<double>());
-  }
-
-  auto uCmdDef = (*asU3)(params);
-  pulseComposite->addInstruction(uCmdDef);
+  pulseComposite->addInstruction(u.clone());
 }
 
 void PulseMappingVisitor::visit(Measure &measure) {
@@ -340,6 +293,8 @@ void PulseMappingVisitor::visit(Measure &measure) {
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
     auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
     pulseComposite->addInstruction(pulseInst);
+  } else {
+    pulseComposite->addInstruction(measure.clone());
   }
 }
 
