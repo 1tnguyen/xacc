@@ -102,7 +102,7 @@ private:
   std::string meas_return;
   int64_t meas_level;
   int64_t memory_slot_size;
-
+  std::optional<nlohmann::json> calibrations;
 public:
   const int64_t &get_shots() const { return shots; }
   int64_t &get_mutable_shots() { return shots; }
@@ -192,6 +192,15 @@ public:
   int64_t &get_mutable_memory_slot_size() { return memory_slot_size; }
   void set_memory_slot_size(const int64_t &value) {
     this->memory_slot_size = value;
+  }
+
+  void set_calibrations(const nlohmann::json &value) {
+    std::cout << "Calibration:\n";
+    value.dump();
+    this->calibrations = value;
+  }
+  std::optional<nlohmann::json> get_calibrations() const {
+    return this->calibrations;
   }
 };
 
@@ -766,6 +775,9 @@ inline void to_json(json &j, const xacc::ibm::QObjectConfig &x) {
   j["meas_return"] = x.get_meas_return();
   j["meas_level"] = x.get_meas_level();
   j["memory_slot_size"] = x.get_memory_slot_size();
+  if (x.get_calibrations().has_value()) {
+    j["calibrations"] = x.get_calibrations().value();
+  }
 }
 
 inline void from_json(const json &j, xacc::ibm::ExperimentConfig &x) {

@@ -17,12 +17,16 @@
 #include "AllGateVisitor.hpp"
 #include "QObject.hpp"
 #include "xacc.hpp"
+#include "Pulse.hpp"
+#include "PulseQObject.hpp"
 
 using namespace xacc::ibm;
 
 namespace xacc {
 namespace quantum {
-class QObjectExperimentVisitor : public AllGateVisitor {
+class QObjectExperimentVisitor
+    : public AllGateVisitor,
+      public InstructionVisitor<xacc::quantum::Pulse> {
 protected:
   constexpr static double pi = xacc::constants::pi;
 
@@ -33,6 +37,10 @@ protected:
   std::vector<int> usedMemorySlots;
   std::optional<int64_t> conditionalRegId;
   std::map<std::pair<std::string, std::size_t>, std::size_t> cReg_to_meas_idx;
+  // calibrations: (gate name + bits) => pulse instructions
+  std::map<std::pair<std::string, std::vector<std::size_t>>,
+           std::vector<xacc::ibm_pulse::Instruction>>
+      calibrations;
 
 public:
   int maxMemorySlots = 0;
@@ -208,6 +216,21 @@ public:
     //   std::to_string(experiment.get_instructions().size()));
 
     return experiment;
+  }
+
+  nlohmann::json getCalibrationsJson() {
+    nlohmann::json root;
+    std::vector<nlohmann::json> gates;
+    for (auto &[gate_and_qbits, pulses] : calibrations) {
+      auto &[gate_name, bits] = gate_and_qbits;
+      nlohmann::json gate_calibration;
+      gate_calibration["name"] = gate_name;
+      gate_calibration["qubits"] = bits;
+      gate_calibration["instructions"] = pulses;
+      gates.emplace_back(gate_calibration);
+    }
+    root["gates"] = gates;
+    return root;
   }
 
   void setConditional(xacc::ibm::Instruction &io_inst) {
@@ -444,6 +467,25 @@ public:
       i->accept(this);
     }
     conditionalRegId.reset();
+  }
+
+  void visit(Pulse &i) override {
+    xacc::ibm::Instruction inst;
+    for (const auto &bit : i.bits()) {
+      inst.get_mutable_qubits().emplace_back(bit);
+    }
+    inst.get_mutable_name() = i.name();
+    setConditional(inst);
+    instructions.push_back(inst);
+
+    // Add to the list of calibrations:
+    xacc::ibm_pulse::Instruction pulse_inst;
+    pulse_inst.set_ch(i.channel());
+    pulse_inst.set_name(i.name());
+    pulse_inst.set_phase(i.getParameter(0).as<double>());
+    pulse_inst.set_t0(i.start());
+    calibrations[std::make_pair(i.name(), i.bits())] =
+        std::vector<xacc::ibm_pulse::Instruction>{pulse_inst};
   }
 
   /**

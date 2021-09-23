@@ -460,35 +460,37 @@ std::string PulseQObjGenerator::getQObjJsonStr(
     std::vector<std::pair<int, int>> &connectivity,
     const nlohmann::json &backendDefaults) {
   xacc::info("Backend Info: \n" + backend.dump());
-  xacc::ibm_pulse::PulseQObject root;
-  xacc::ibm_pulse::QObject qobj;
+  xacc::ibm::QObject qobj;
   qobj.set_qobj_id("xacc-qobj-id");
-  qobj.set_schema_version("1.2.0");
-  qobj.set_type("PULSE");
-  xacc::ibm_pulse::QObjectHeader h;
-  h.set_backend_name(backend["backend_name"].get<std::string>());
-  h.set_backend_version(backend["backend_version"].get<std::string>());
-  qobj.set_header(h);
+  qobj.set_schema_version("1.1.0");
+  qobj.set_type("QASM");
+  qobj.set_header(QObjectHeader());
   const bool pulseSupported = backend["open_pulse"].get<bool>();
   if (!pulseSupported) {
-    xacc::error("Backend named '" + h.get_backend_name() +
-                "' doesn't support OpenPulse.");
+    xacc::error("Backend doesn't support OpenPulse.");
     return "";
   }
-  auto scheduler = xacc::getService<Scheduler>("pulse");
-  std::vector<xacc::ibm_pulse::Experiment> experiments;
+  std::vector<xacc::ibm::Experiment> experiments;
   // std::vector<xacc::ibm_pulse::PulseLibrary> all_pulses;
   std::map<std::string, xacc::ibm_pulse::PulseLibrary> all_pulses;
 
   // Using the Pulse instruction assembler: lower gate->pulse + schedule.
   auto ibmPulseAssembler = xacc::getService<IRTransformation>("ibm-pulse");
+  const auto basis_gates =
+      backend["basis_gates"].get<std::vector<std::string>>();
+  // If the gate set has "u3" -> old gateset.
+  const auto gateSet = (xacc::container::contains(basis_gates, "u3"))
+                           ? QObjectExperimentVisitor::GateSet::U_CX
+                           : QObjectExperimentVisitor::GateSet::RZ_SX_CX;
+  std::vector<nlohmann::json> calibrations;
   for (auto &gateKernel : circuits) {
     auto kernel = xacc::ir::asComposite(gateKernel->clone());
     // Assemble pulse composite from the input kernel.
     ibmPulseAssembler->apply(kernel, nullptr);
 
-    // Construct the Pulse QObj
-    auto visitor = std::make_shared<OpenPulseVisitor>();
+    // Construct the QObj
+    auto visitor = std::make_shared<QObjectExperimentVisitor>(
+        kernel->name(), backend["n_qubits"].get<int>(), gateSet);
     InstructionIterator it(kernel);
     int memSlots = 0;
     while (it.hasNext()) {
@@ -497,46 +499,35 @@ std::string PulseQObjGenerator::getQObjJsonStr(
         nextInst->accept(visitor);
       }
     }
-
-    xacc::ibm_pulse::ExperimentHeader hh;
-    hh.set_name(kernel->name());
-    hh.set_memory_slots(backend["n_qubits"].get<int>());
-
-    xacc::ibm_pulse::Experiment experiment;
-    experiment.set_instructions(alignMeasurePulseInstructions(
-        orderFrameChangeInsts(visitor->instructions)));
-    experiment.set_header(hh);
+    auto experiment = visitor->getExperiment();
     experiments.push_back(experiment);
 
-    for (auto p : visitor->library) {
-      if (!all_pulses.count(p.get_name())) {
-        all_pulses.insert({p.get_name(), p});
-      }
-    }
+    calibrations.emplace_back(visitor->getCalibrationsJson());
   }
 
   qobj.set_experiments(experiments);
 
-  xacc::ibm_pulse::Config config;
+  xacc::ibm::QObjectConfig config;
 
   std::vector<xacc::ibm_pulse::PulseLibrary> pulses;
   for (auto &kv : all_pulses) {
     pulses.push_back(kv.second);
   }
-  config.set_pulse_library(pulses);
+  // config.set_pulse_library(pulses);
   config.set_memory_slots(backend["n_qubits"].get<int>());
   // For now, we always use measurement level 2 (qubit 0/1 measurement)
   // We can support level 1 if required (IQ measurement values)
   config.set_meas_level(
       2); // Possible values: 1 (IQ raw values); 2 (digital values)
   config.set_meas_return("avg"); // Possible values: "avg", "single"
-  config.set_rep_time(1000);
+  // config.set_rep_time(1000);
   config.set_memory_slot_size(100);
   config.set_memory(false);
   config.set_shots(shots);
+  config.set_n_qubits(backend["n_qubits"].get<int>());
   // The list of intrinsic parametric pulses supported by the backend.
-  config.set_parametric_pulses(
-      backend["parametric_pulses"].get<std::vector<std::string>>());
+  // config.set_parametric_pulses(
+  //     backend["parametric_pulses"].get<std::vector<std::string>>());
 
   // auto j = json::parse(getBackendPropsResponse);
   // Set meas lo and qubit lo
@@ -544,24 +535,20 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   // This will guarantee best on-resonance drive.
   // TODO: we can support changing the drive freq. if necessary from
   // higher-level.
-  config.set_meas_lo_freq(
-      backendDefaults["meas_freq_est"].get<std::vector<double>>());
-  config.set_qubit_lo_freq(
-      backendDefaults["qubit_freq_est"].get<std::vector<double>>());
+  config.set_meas_lo_freq(backendDefaults["meas_freq_est"]);
+  config.set_qubit_lo_freq(backendDefaults["qubit_freq_est"]);
 
+  // Adds gate calibrations:
+  // TODO: merge calibrations from multiple experiments
+  assert(!calibrations.empty());
+  config.set_calibrations(calibrations[0]);
   qobj.set_config(config);
 
-  root.set_q_object(qobj);
+  // Create the JSON String to send
+  nlohmann::json j;
+  nlohmann::to_json(j, qobj);
 
-  xacc::ibm_pulse::Backend b;
-  b.set_name(backend["backend_name"].get<std::string>());
-
-  root.set_backend(b);
-  root.set_shots(shots);
-
-  nlohmann::json jj;
-  nlohmann::to_json(jj, root.get_q_object());
-  return jj.dump();
+  return j.dump();
 }
 
 void IBMAccelerator::execute(
@@ -590,18 +577,7 @@ void IBMAccelerator::execute(
       break;
     }
   }
-  if (qobj_type == "pulse") {
-    // if we need to use pulse mode, contribute the pulse library of the
-    // backend (if any)
-    if (!defaults_response.empty()) {
-      // Make sure we only contribute pulse cmd-def once
-      static bool contributed;
-      if (!contributed) {
-        contributed = true;
-        contributeInstructions();
-      }
-    }
-  }
+  
   // Get the correct QObject Generator
   auto qobjGen = xacc::getService<QObjGenerator>(qobj_type);
 
@@ -1402,7 +1378,7 @@ void IBMPulseTransform::apply(std::shared_ptr<CompositeInstruction> program,
                               const std::shared_ptr<Accelerator> accelerator,
                               const HeterogeneousMap &options) {
 
-  auto scheduler = xacc::getService<Scheduler>("pulse");
+  // auto scheduler = xacc::getService<Scheduler>("pulse");
   auto pulseMapper = std::make_shared<PulseMappingVisitor>();
   {
     InstructionIterator it(program);
@@ -1416,7 +1392,7 @@ void IBMPulseTransform::apply(std::shared_ptr<CompositeInstruction> program,
   auto loweredKernel = pulseMapper->pulseComposite;
   xacc::info("Pulse-level kernel: \n" + loweredKernel->toString());
   // Schedule the pulses
-  scheduler->schedule(loweredKernel);
+  // scheduler->schedule(loweredKernel);
   program->clear();
   program->addInstructions(loweredKernel->getInstructions());
 }

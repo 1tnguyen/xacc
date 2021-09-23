@@ -15,3 +15,6 @@ target_link_libraries(test_open_pulse PRIVATE xacc)
 
 add_executable(test_aer_pulse_sim test_aer_pulse_sim.cpp)
 target_link_libraries(test_aer_pulse_sim PRIVATE xacc)
+
+add_executable(test_gate_calibrations test_pulse_gate_calibrarions.cpp)
+target_link_libraries(test_gate_calibrations PRIVATE xacc)
