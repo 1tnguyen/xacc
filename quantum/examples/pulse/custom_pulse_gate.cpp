@@ -12,6 +12,7 @@
  *******************************************************************************/
 #include "xacc.hpp"
 #include "xacc_service.hpp"
+#include "Pulse.hpp"
 
 // Running pulse-level simulation.
 int main(int argc, char **argv) {
@@ -32,22 +33,35 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < nbSamples; ++i) {
     samples.emplace_back(gaussianCalc(i, 0.1, nbSamples / 2, nbSamples / 4));
   }
-  // Create pulse instruction: a Gaussian pulse on d0
+  // Create some pulse instructions: Gaussian pulses on d0 and frame change
   auto pulseInst0 = provider->createInstruction(
       "gaussian", {0}, {}, {{"channel", "d0"}, {"samples", samples}});
-
+  std::vector<double> samples_1;
+  for (size_t i = 0; i < nbSamples; ++i) {
+    samples_1.emplace_back(gaussianCalc(i, -0.1, nbSamples / 2, nbSamples / 4));
+  }
+  auto pulseInst1 = provider->createInstruction(
+      "neg_gaussian", {0}, {}, {{"channel", "d0"}, {"samples", samples_1}});
+  pulseInst1->setStart(nbSamples);
+  auto fc = std::make_shared<xacc::quantum::Pulse>("fc");
+  fc->setChannel("d0");
+  fc->setStart(nbSamples);
+  xacc::InstructionParameter pi(M_PI);
+  fc->setParameter(0, pi);
 
   // Register a **custom** implementation of H gate for qubit 0:
   // (1) The pulse sequence name must conform to the format:
   // pulse::<gate_name>_<qubit>
   // or: pulse::<gate_name>_<qubit>_<qubit> for 2-qubit gate
-  const std::string x_cmd_def_name = "pulse::h_0";
-  auto cmd_def = provider->createComposite(x_cmd_def_name);
+  const std::string h_cmd_def_name = "pulse::h_0";
+  auto cmd_def = provider->createComposite(h_cmd_def_name);
   // (2) Add pulses to the sequence:
-  // In this case, we just add a dummy Gaussian pulse.
+  // In this case, we just add dummy Gaussian pulses.
   cmd_def->addInstruction(pulseInst0);
+  cmd_def->addInstruction(fc);
+  cmd_def->addInstruction(pulseInst1);
   // (3) Register the cmd-def 
-  xacc::contributeService(x_cmd_def_name, cmd_def);
+  xacc::contributeService(h_cmd_def_name, cmd_def);
 
   // Now, create a circuit using H gate:
   auto h_gate = provider->createInstruction("H", {0});

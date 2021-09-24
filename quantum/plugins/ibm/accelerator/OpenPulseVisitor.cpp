@@ -36,8 +36,11 @@ void PulseMappingVisitor::visit(Hadamard &h) {
   const auto commandDef = constructPulseCommandDef(h);
   // If there is a custom pulse provided for Hadamard gate:
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(h.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     // Just keep the gate as-is (digital gate)
     pulseComposite->addInstruction(h.clone());
@@ -47,8 +50,11 @@ void PulseMappingVisitor::visit(Hadamard &h) {
 void PulseMappingVisitor::visit(CNOT &cnot) {
   const auto commandDef = constructPulseCommandDef(cnot);
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(cnot.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(cnot.clone());
   }
@@ -58,8 +64,11 @@ void PulseMappingVisitor::visit(Rz &rz) {
   const auto commandDef = constructPulseCommandDef(rz);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(rz.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(rz.clone());
   }
@@ -69,8 +78,11 @@ void PulseMappingVisitor::visit(Ry &ry) {
   const auto commandDef = constructPulseCommandDef(ry);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(ry.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(ry.clone());
   }
@@ -80,8 +92,11 @@ void PulseMappingVisitor::visit(Rx &rx) {
   const auto commandDef = constructPulseCommandDef(rx);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(rx.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(rx.clone());
   }
@@ -91,8 +106,11 @@ void PulseMappingVisitor::visit(X &x) {
   const auto commandDef = constructPulseCommandDef(x);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(x.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(x.clone());
   }
@@ -102,8 +120,11 @@ void PulseMappingVisitor::visit(Y &y) {
   const auto commandDef = constructPulseCommandDef(y);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(y.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(y.clone());
   }
@@ -113,14 +134,27 @@ void PulseMappingVisitor::visit(Z &z) {
   const auto commandDef = constructPulseCommandDef(z);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(z.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
-   pulseComposite->addInstruction(z.clone());
+    pulseComposite->addInstruction(z.clone());
   }
 }
 
 void PulseMappingVisitor::visit(CY &cy) {
+  const auto commandDef = constructPulseCommandDef(cy);
+  // In case there is custom pulse sequence defined, just use it.
+  if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(cy.bits());
+    pulseComposite->addInstruction(pulse_rep);
+    return;
+  }
   // CY(a,b) = sdg(b); cx(a,b); s(b);
   auto sdg = std::make_shared<Sdg>(cy.bits()[1]);
   auto cx = std::make_shared<CNOT>(cy.bits());
@@ -131,6 +165,16 @@ void PulseMappingVisitor::visit(CY &cy) {
 }
 
 void PulseMappingVisitor::visit(CZ &cz) {
+  const auto commandDef = constructPulseCommandDef(cz);
+  // In case there is custom pulse sequence defined, just use it.
+  if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(cz.bits());
+    pulseComposite->addInstruction(pulse_rep);
+    return;
+  }
   // CZ(a,b) =  H(b); CX(a,b); H(b);
   auto h1 = std::make_shared<Hadamard>(cz.bits()[1]);
   auto cx = std::make_shared<CNOT>(cz.bits());
@@ -141,6 +185,16 @@ void PulseMappingVisitor::visit(CZ &cz) {
 }
 
 void PulseMappingVisitor::visit(Swap &s) {
+  const auto commandDef = constructPulseCommandDef(s);
+  // In case there is custom pulse sequence defined, just use it.
+  if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(s.bits());
+    pulseComposite->addInstruction(pulse_rep);
+    return;
+  }
   // SWAP(a,b) =  CX(a,b); CX(b,a); CX(a,b);
   auto cx1 = std::make_shared<CNOT>(s.bits());
   auto cx2 = std::make_shared<CNOT>(s.bits()[1], s.bits()[0]);
@@ -173,6 +227,16 @@ void PulseMappingVisitor::visit(CRZ &crz) {
 }
 
 void PulseMappingVisitor::visit(CH &ch) {
+  const auto commandDef = constructPulseCommandDef(ch);
+  // In case there is custom pulse sequence defined, just use it.
+  if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(ch.bits());
+    pulseComposite->addInstruction(pulse_rep);
+    return;
+  }
   // CH(a,b) = S(b); H(b); T(b); CX(a,b); Tdg(b); H(b); Sdg(b);
   {
     auto s = std::make_shared<S>(ch.bits()[1]);
@@ -219,8 +283,11 @@ void PulseMappingVisitor::visit(Sdg &sdg) {
   const auto commandDef = constructPulseCommandDef(sdg);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(sdg.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(sdg.clone());
   }
@@ -230,8 +297,11 @@ void PulseMappingVisitor::visit(T &t) {
   const auto commandDef = constructPulseCommandDef(t);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(t.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(t.clone());
   }
@@ -241,8 +311,11 @@ void PulseMappingVisitor::visit(Tdg &tdg) {
   const auto commandDef = constructPulseCommandDef(tdg);
 
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(tdg.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(tdg.clone());
   }
@@ -291,8 +364,11 @@ void PulseMappingVisitor::visit(U &u) {
 void PulseMappingVisitor::visit(Measure &measure) {
   const auto commandDef = constructPulseCommandDef(measure);
   if (xacc::hasContributedService<xacc::Instruction>(commandDef)) {
-    auto pulseInst = xacc::getContributedService<xacc::Instruction>(commandDef);
-    pulseComposite->addInstruction(pulseInst);
+    const std::string calibration_cmd_def_name = "cmd_def::" + commandDef;
+    auto pulse_rep =
+        std::make_shared<xacc::quantum::Pulse>(calibration_cmd_def_name);
+    pulse_rep->setBits(measure.bits());
+    pulseComposite->addInstruction(pulse_rep);
   } else {
     pulseComposite->addInstruction(measure.clone());
   }

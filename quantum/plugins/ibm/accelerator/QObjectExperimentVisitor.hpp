@@ -17,6 +17,7 @@
 #include "AllGateVisitor.hpp"
 #include "QObject.hpp"
 #include "xacc.hpp"
+#include "xacc_service.hpp"
 #include "Pulse.hpp"
 #include "PulseQObject.hpp"
 
@@ -477,6 +478,47 @@ public:
     xacc::ibm::Instruction inst;
     for (const auto &bit : i.bits()) {
       inst.get_mutable_qubits().emplace_back(bit);
+    }
+
+    // If this pulse represents a cmd-def representation
+    // of a custom implementation of a quantum gate.
+    // e.g. via xacc::contributeService
+    if (i.name().rfind("cmd_def::pulse::", 0) == 0) {
+      const std::string gate_name = i.name().substr(16);
+      const std::string calibration_gate_name = "custom_gate::" + gate_name;
+      inst.get_mutable_name() = calibration_gate_name;
+      setConditional(inst);
+      instructions.push_back(inst);
+      const std::string pulse_composite_name = i.name().substr(9);
+      if (!xacc::hasContributedService<xacc::Instruction>(
+              pulse_composite_name)) {
+        xacc::error("Unable to retrieve pulse cmd-def for " +
+                    pulse_composite_name);
+      }
+      assert(
+          xacc::getContributedService<xacc::Instruction>(pulse_composite_name)
+              ->isComposite());
+      auto pulseComposite =
+          std::dynamic_pointer_cast<xacc::CompositeInstruction>(
+              xacc::getContributedService<xacc::Instruction>(
+                  pulse_composite_name));
+
+      // Add to the list of calibrations:
+      if (calibrations.find(std::make_pair(calibration_gate_name, i.bits())) ==
+          calibrations.end()) {
+        std::vector<xacc::ibm_pulse::Instruction> all_pulses;
+        for (auto &sub_pulse : pulseComposite->getInstructions()) {
+          xacc::ibm_pulse::Instruction pulse_inst;
+          pulse_inst.set_ch(sub_pulse->channel());
+          pulse_inst.set_name(sub_pulse->name());
+          pulse_inst.set_phase(sub_pulse->getParameter(0).as<double>());
+          pulse_inst.set_t0(sub_pulse->start());
+          all_pulses.emplace_back(pulse_inst);
+        }
+        calibrations[std::make_pair(calibration_gate_name, i.bits())] =
+            all_pulses;
+      }
+      return;
     }
     // Name of the calibration gate:
     const std::string calibration_gate_name = "gate::" + i.name();

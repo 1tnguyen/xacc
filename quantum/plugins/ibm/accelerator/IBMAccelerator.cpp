@@ -480,7 +480,7 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   const auto gateSet = (xacc::container::contains(basis_gates, "u3"))
                            ? QObjectExperimentVisitor::GateSet::U_CX
                            : QObjectExperimentVisitor::GateSet::RZ_SX_CX;
-  std::vector<nlohmann::json> calibrations;
+  std::vector<nlohmann::json> gate_calibrations;
   std::vector<std::shared_ptr<xacc::quantum::Pulse>> all_pulses;
   for (auto &gateKernel : circuits) {
     auto kernel = xacc::ir::asComposite(gateKernel->clone());
@@ -498,14 +498,36 @@ std::string PulseQObjGenerator::getQObjJsonStr(
         nextInst->accept(visitor);
       }
       if (std::dynamic_pointer_cast<xacc::quantum::Pulse>(nextInst)) {
-        all_pulses.emplace_back(
-            std::dynamic_pointer_cast<xacc::quantum::Pulse>(nextInst));
+        auto casted_pulse =
+            std::dynamic_pointer_cast<xacc::quantum::Pulse>(nextInst);
+        if (!casted_pulse->getSamples().empty()) {
+          all_pulses.emplace_back(
+              std::dynamic_pointer_cast<xacc::quantum::Pulse>(nextInst));
+        } else if (casted_pulse->name().rfind("cmd_def::pulse::", 0) == 0) {
+          const std::string pulse_composite_name =
+              casted_pulse->name().substr(9);
+          auto pulseComposite =
+              std::dynamic_pointer_cast<xacc::CompositeInstruction>(
+                  xacc::getContributedService<xacc::Instruction>(
+                      pulse_composite_name));
+          for (auto &sub_pulse : pulseComposite->getInstructions()) {
+            auto pulse_inst =
+                std::dynamic_pointer_cast<xacc::quantum::Pulse>(sub_pulse);
+            if (!pulse_inst->getSamples().empty()) {
+              auto iter = std::find_if(
+                  all_pulses.begin(), all_pulses.end(),
+                  [&](auto a) { return a->name() == pulse_inst->name(); });
+              if (iter == all_pulses.end()) {
+                all_pulses.emplace_back(pulse_inst);
+              }
+            }
+          }
+        } 
       }
     }
     auto experiment = visitor->getExperiment();
     experiments.push_back(experiment);
-
-    calibrations.emplace_back(visitor->getCalibrationsJson());
+    gate_calibrations.emplace_back(visitor->getCalibrationsJson());
   }
 
   qobj.set_experiments(experiments);
@@ -543,9 +565,10 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   config.set_qubit_lo_freq(backendDefaults["qubit_freq_est"]);
 
   // Adds gate calibrations:
-  // TODO: merge calibrations from multiple experiments
-  assert(!calibrations.empty());
-  config.set_calibrations(calibrations[0]);
+  assert(!gate_calibrations.empty());
+  // nlohmann::json all_calibrations;
+  // all_calibrations["gates"] = gate_calibrations;
+  config.set_calibrations(gate_calibrations[0]);
   qobj.set_config(config);
 
   // Set the Backend
