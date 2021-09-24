@@ -10,6 +10,10 @@
  * Contributors:
  *   Alexander J. McCaskey - initial API and implementation
  *******************************************************************************/
+// Demonstrates pulse+gate circuit:
+// A composite can contain pulses and gates (e.g., measure, x,y,z)
+// All digital gates will be kept as-is in the QOBJ (aka default vendor pulse sequences)
+// Pulses are converted to **custom** calibration gates referencing the pulse samples.
 #include "xacc.hpp"
 #include "xacc_service.hpp"
 
@@ -36,11 +40,12 @@ int main(int argc, char **argv) {
       "gaussian", {0}, {}, {{"channel", "d0"}, {"samples", samples}});
   auto x_gate = provider->createInstruction("X", {0});
   auto meas = provider->createInstruction("Measure", {0});
-  // Add the X - Pulse - Measure
+  // Add the X - Pulse - Measure:
+  // X and Measure are kept as gates.
   auto f = provider->createComposite("tmp");
   f->addInstructions({x_gate, pulseInst0, meas});
   accelerator->execute(buffer, f);
-  std::cout << "First experiment:\n";
+  std::cout << "Experiment result:\n";
   buffer->print();
   xacc::Finalize();
 }
