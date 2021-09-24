@@ -97,6 +97,9 @@ public:
         qlabels.push_back({"q", i});
       }
       header.set_qubit_labels(qlabels);
+      if (maxMemorySlots == 0) {
+        maxMemorySlots = 1;
+      }
       header.set_memory_slots(maxMemorySlots);
 
       std::vector<std::vector<ClbitLabel>> clabels;
@@ -227,6 +230,7 @@ public:
       gate_calibration["name"] = gate_name;
       gate_calibration["qubits"] = bits;
       gate_calibration["instructions"] = pulses;
+      gate_calibration["params"] = std::vector<double>{};
       gates.emplace_back(gate_calibration);
     }
     root["gates"] = gates;
@@ -474,7 +478,9 @@ public:
     for (const auto &bit : i.bits()) {
       inst.get_mutable_qubits().emplace_back(bit);
     }
-    inst.get_mutable_name() = i.name();
+    // Name of the calibration gate:
+    const std::string calibration_gate_name = "gate::" + i.name();
+    inst.get_mutable_name() = calibration_gate_name;
     setConditional(inst);
     instructions.push_back(inst);
 
@@ -484,7 +490,7 @@ public:
     pulse_inst.set_name(i.name());
     pulse_inst.set_phase(i.getParameter(0).as<double>());
     pulse_inst.set_t0(i.start());
-    calibrations[std::make_pair(i.name(), i.bits())] =
+    calibrations[std::make_pair(calibration_gate_name, i.bits())] =
         std::vector<xacc::ibm_pulse::Instruction>{pulse_inst};
   }
 

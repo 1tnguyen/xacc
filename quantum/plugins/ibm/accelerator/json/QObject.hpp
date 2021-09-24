@@ -195,8 +195,6 @@ public:
   }
 
   void set_calibrations(const nlohmann::json &value) {
-    std::cout << "Calibration:\n";
-    value.dump();
     this->calibrations = value;
   }
   std::optional<nlohmann::json> get_calibrations() const {
@@ -772,7 +770,10 @@ inline void to_json(json &j, const xacc::ibm::QObjectConfig &x) {
   if (!x.get_meas_lo_range().empty()) {
     j["meas_lo_range"] = x.get_meas_lo_range();
   }
-  j["meas_return"] = x.get_meas_return();
+  if (!x.get_meas_return().empty()) {
+    j["meas_return"] = x.get_meas_return();
+  }
+
   j["meas_level"] = x.get_meas_level();
   j["memory_slot_size"] = x.get_memory_slot_size();
   if (x.get_calibrations().has_value()) {

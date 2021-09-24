@@ -462,7 +462,7 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   xacc::info("Backend Info: \n" + backend.dump());
   xacc::ibm::QObject qobj;
   qobj.set_qobj_id("xacc-qobj-id");
-  qobj.set_schema_version("1.1.0");
+  qobj.set_schema_version("1.3.0");
   qobj.set_type("QASM");
   qobj.set_header(QObjectHeader());
   const bool pulseSupported = backend["open_pulse"].get<bool>();
@@ -472,8 +472,6 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   }
   std::vector<xacc::ibm::Experiment> experiments;
   // std::vector<xacc::ibm_pulse::PulseLibrary> all_pulses;
-  std::map<std::string, xacc::ibm_pulse::PulseLibrary> all_pulses;
-
   // Using the Pulse instruction assembler: lower gate->pulse + schedule.
   auto ibmPulseAssembler = xacc::getService<IRTransformation>("ibm-pulse");
   const auto basis_gates =
@@ -483,6 +481,7 @@ std::string PulseQObjGenerator::getQObjJsonStr(
                            ? QObjectExperimentVisitor::GateSet::U_CX
                            : QObjectExperimentVisitor::GateSet::RZ_SX_CX;
   std::vector<nlohmann::json> calibrations;
+  std::vector<std::shared_ptr<xacc::quantum::Pulse>> all_pulses;
   for (auto &gateKernel : circuits) {
     auto kernel = xacc::ir::asComposite(gateKernel->clone());
     // Assemble pulse composite from the input kernel.
@@ -498,6 +497,10 @@ std::string PulseQObjGenerator::getQObjJsonStr(
       if (nextInst->isEnabled()) {
         nextInst->accept(visitor);
       }
+      if (std::dynamic_pointer_cast<xacc::quantum::Pulse>(nextInst)) {
+        all_pulses.emplace_back(
+            std::dynamic_pointer_cast<xacc::quantum::Pulse>(nextInst));
+      }
     }
     auto experiment = visitor->getExperiment();
     experiments.push_back(experiment);
@@ -510,17 +513,18 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   xacc::ibm::QObjectConfig config;
 
   std::vector<xacc::ibm_pulse::PulseLibrary> pulses;
-  for (auto &kv : all_pulses) {
-    pulses.push_back(kv.second);
+  for (auto &i : all_pulses) {
+    xacc::ibm_pulse::PulseLibrary lib;
+    lib.set_name(i->name());
+    lib.set_samples(i->getSamples());
+    pulses.push_back(lib);
   }
-  // config.set_pulse_library(pulses);
+
   config.set_memory_slots(backend["n_qubits"].get<int>());
   // For now, we always use measurement level 2 (qubit 0/1 measurement)
   // We can support level 1 if required (IQ measurement values)
   config.set_meas_level(
       2); // Possible values: 1 (IQ raw values); 2 (digital values)
-  config.set_meas_return("avg"); // Possible values: "avg", "single"
-  // config.set_rep_time(1000);
   config.set_memory_slot_size(100);
   config.set_memory(false);
   config.set_shots(shots);
@@ -544,10 +548,20 @@ std::string PulseQObjGenerator::getQObjJsonStr(
   config.set_calibrations(calibrations[0]);
   qobj.set_config(config);
 
+  // Set the Backend
+  xacc::ibm::QObjectHeader qobjHeader;
+  qobjHeader.set_backend_version(backend["backend_version"].get<std::string>());
+  qobjHeader.set_backend_name(backend["backend_name"].get<std::string>());
+  qobj.set_header(qobjHeader);
+
   // Create the JSON String to send
   nlohmann::json j;
   nlohmann::to_json(j, qobj);
-
+  j["config"]["pulse_library"] = pulses;
+  j["config"]["use_measure_esp"] = false;
+  j["config"]["init_qubits"] = true;
+  j["config"]["parametric_pulses"] =
+      backend["parametric_pulses"].get<std::vector<std::string>>();
   return j.dump();
 }
 
