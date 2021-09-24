@@ -18,3 +18,6 @@ target_link_libraries(test_aer_pulse_sim PRIVATE xacc)
 
 add_executable(mix_pulses_gates mix_pulses_gates.cpp)
 target_link_libraries(mix_pulses_gates PRIVATE xacc)
+
+add_executable(custom_pulse_gate custom_pulse_gate.cpp)
+target_link_libraries(custom_pulse_gate PRIVATE xacc)
