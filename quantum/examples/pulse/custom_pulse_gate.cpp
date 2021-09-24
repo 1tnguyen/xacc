@@ -14,7 +14,9 @@
 #include "xacc_service.hpp"
 #include "Pulse.hpp"
 
-// Running pulse-level simulation.
+// Demonstrate the ability to register a custom pulse sequence
+// implementation for a quantum gate as a 'calibration' gate.
+// XACC will subtitute the gate with the registered pulse sequence.
 int main(int argc, char **argv) {
   xacc::set_verbose(true);
   xacc::Initialize(argc, argv);
