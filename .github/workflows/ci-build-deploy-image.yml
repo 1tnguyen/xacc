@@ -23,7 +23,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build Docker image
-        run: docker build --tag $IMAGE -f $GITHUB_WORKSPACE/docker/deploy/dev/Dockerfile . 
+        run: cd $GITHUB_WORKSPACE/docker/deploy/dev && docker build --tag $IMAGE . --no-cache
       
       - name: Publish image
         run: docker push $IMAGE
