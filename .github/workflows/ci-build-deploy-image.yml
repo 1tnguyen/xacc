@@ -7,12 +7,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Testing only...
+      IMAGE: ghcr.io/1tnguyen/xacc
     name: "Build Docker Image"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Build Docker image
-        run: cd docker/deploy/dev && docker build -t xacc/xacc . --no-cache
       
-    
+      - name: Log in to the Container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build Docker image
+        run: docker build --tag $IMAGE -f $GITHUB_WORKSPACE/docker/deploy/dev/Dockerfile . 
+      
+      - name: Publish image
+        run: docker push $IMAGE
