@@ -40,7 +40,7 @@ jobs:
         run: export SDKROOT="`xcrun --show-sdk-path`" && cmake --build . --target install
       
       - name: Setup ssh debug session
-        uses: lhotari/action-upterm@v1
+        uses: mxschmitt/action-tmate@v3
       
       - name: Test
         working-directory: build/
